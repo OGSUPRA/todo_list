@@ -10,9 +10,9 @@ def init_db():
         title TEXT NOT NULL,
         description TEXT,
         status TEXT CHECK(status IN ('todo','done')) DEFAULT 'todo',
-        is_deleted INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        deleted_at DATETIME NULL
+    );
     """)
     conn.commit()
     conn.close()

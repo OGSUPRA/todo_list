@@ -20,12 +20,12 @@ def get_all_tasks(include_done=True):
     if include_done:
         cursor.execute("""
             SELECT * FROM tasks
-            WHERE is_deleted = 0
+            WHERE deleted_at IS NULL
         """)
     else:
         cursor.execute("""
             SELECT * FROM tasks
-            WHERE status = 'todo' AND is_deleted = 0
+            WHERE status = 'todo' AND deleted_at IS NULL
         """)
 
     tasks = cursor.fetchall()
@@ -53,9 +53,24 @@ def delete_task(task_id):
 
     cursor.execute("""
         UPDATE tasks
-        SET is_deleted = 1
+        SET deleted_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND deleted_at IS NULL
+    """, (task_id,))
+
+    conn.commit()
+    conn.close()
+
+
+def restore_task(task_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE tasks
+        SET deleted_at = NULL
         WHERE id = ?
     """, (task_id,))
 
     conn.commit()
     conn.close()
+
