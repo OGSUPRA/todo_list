@@ -40,7 +40,7 @@ def mark_task_done(task_id):
     cursor.execute("""
         UPDATE tasks
         SET status = 'done'
-        WHERE id = ? AND is_deleted = 0
+        WHERE id = ? AND deleted_at IS NULL
     """, (task_id,))
 
     conn.commit()
