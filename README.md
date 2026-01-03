@@ -16,4 +16,4 @@
 
 ## ▶️ Запуск проекта
 ```bash
-python app.py
+py ./backend/app.py
