@@ -33,7 +33,21 @@ def get_all_tasks(include_done=True):
     return tasks
 
 
-def mark_task_done(task_id):
+def mark_task_done(task_id):     #На данный момент реализация данного сервиса отсутствует
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE tasks
+        SET status = 'todo'
+        WHERE id = ? AND deleted_at IS NULL
+    """, (task_id,))
+
+    conn.commit()
+    conn.close()
+
+
+def mark_task_notdone(task_id):
     conn = get_connection()
     cursor = conn.cursor()
 
