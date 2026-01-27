@@ -4,6 +4,7 @@ from services.tasks import (
     create_task,
     get_all_tasks,
     mark_task_done,
+    mark_task_notdone,
     delete_task
 )
 
@@ -24,6 +25,11 @@ def add_task():
 @app.route("/done/<int:task_id>")
 def done(task_id):
     mark_task_done(task_id)
+    return redirect(url_for("index"))
+
+@app.route("/notdone/<int:task_id>")
+def notdone(task_id):
+    mark_task_notdone(task_id)
     return redirect(url_for("index"))
 
 @app.route("/delete/<int:task_id>")

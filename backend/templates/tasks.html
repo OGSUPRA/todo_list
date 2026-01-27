@@ -20,13 +20,21 @@
     {% for task in tasks %}
         <li>
             {% if task.status == "done" %}
-                <s>{{ task.title }}</s>
-            {% else %}
                 {{ task.title }}
+                {% if task.description != ''%}
+                    <br>Описание: {{ task.description }}
+                {% endif %}
+            {% else %}
+                <s>{{ task.title }}</s>
             {% endif %}
 
-            [<a href="/done/{{ task.id }}">done</a>]
-            [<a href="/delete/{{ task.id }}">delete</a>]
+            <br>
+            <a href="/done/{{ task.id }}">
+                <button>done</button>
+            </a>
+            <a href="/delete/{{ task.id }}">
+                <button>delete</button>
+            </a>
         </li>
     {% endfor %}
 </ul>
