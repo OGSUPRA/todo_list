@@ -19,7 +19,7 @@
 <ul>
     {% for task in tasks %}
         <li>
-            {% if task.status == "done" %}
+            {% if task.status == "todo" %}
                 {{ task.title }}
                 {% if task.description != ''%}
                     <br>Описание: {{ task.description }}
