@@ -6,50 +6,45 @@
 </head>
 <body>
 
-<h1>Todo List</h1>
+    <h1>Todo List</h1>
 
-<form action="/add" method="post">
-    <input type="text" name="title" placeholder="Название" required>
-    <input type="text" name="description" placeholder="Описание">
-    <button type="submit">Добавить</button>
-</form>
+    <form action="/add" method="post">
+        <input type="text" name="title" placeholder="Название" required>
+        <input type="text" name="description" placeholder="Описание">
+        <button type="submit">Добавить</button>
+    </form>
 
-<hr>
+    <hr>
 
-<ul>
-    {% for task in tasks %}
-        <li>
-            {% if task.status == "todo" %}
-                {{ task.title }}
-                {% if task.description != ''%}
-                    <br>Описание: {{ task.description }}
+    <ul>
+        {% for task in tasks %}
+            <li>
+                {% if task.status == "todo" %}
+                    {{ task.title }}
+                    {% if task.description != ''%}
+                        <br>Описание: {{ task.description }}
+                    {% endif %}
+                    <a href="/done/{{ task.id }}">
+                    <button>done</button>
+                    </a>
+                    <a href="/delete/{{ task.id }}">
+                    <button>delete</button>
+                    </a>
+                {% else %}
+                    <s>{{ task.title }}</s>
+                    <a href="/notdone/{{ task.id }}">
+                    <button>notdone</button>
+                    </a>
+                    <a href="/delete/{{ task.id }}">
+                    <button>delete</button>
+                    </a>
                 {% endif %}
-                <a href="/done/{{ task.id }}">
-                <button>done</button>
-                </a>
-                <a href="/delete/{{ task.id }}">
-                <button>delete</button>
-                </a>
-            {% else %}
-                <s>{{ task.title }}</s>
-                <a href="/notdone/{{ task.id }}">
-                <button>notdone</button>
-                </a>
-                <a href="/delete/{{ task.id }}">
-                <button>delete</button>
-                </a>
-            {% endif %}
-
-            <!-- <br>
-            <a href="/done/{{ task.id }}">
-                <button>done</button>
-            </a>
-            <a href="/delete/{{ task.id }}">
-                <button>delete</button>
-            </a> -->
-        </li>
-    {% endfor %}
-</ul>
+        {% endfor %}
+    </ul>
+    
+    <a href="/deleted">
+    <button>Return deleted tasks</button>
+    </a>
 
 </body>
 </html>

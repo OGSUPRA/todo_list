@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deleted_tasks</title>
+</head>
+<body>
+    <h1>List deleted tasks</h1>
+
+    <hr>
+
+    <ul>
+        {% for task in deleted_tasks %}
+            <li>
+                {% if task.status == "todo" %}
+                    {{ task.title }}
+                    {% if task.description != ''%}
+                        <br>Описание: {{ task.description }}
+                    {% endif %}
+                    <a href="/deleted/restore/{{ task.id }}">
+                    <button>restore</button>
+                    </a>
+                {% else %}
+                    <s>{{ task.title }}</s>
+                    <a href="/deleted/restore/{{ task.id }}">
+                    <button>restore</button>
+                    </a>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <a href="/">
+    <button>Back home</button>
+    </a>
+
+</body>
+</html>
