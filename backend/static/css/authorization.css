@@ -1,0 +1,9 @@
+﻿.auth-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+}
+
+.footer-actions {
+    margin-top: 24px;
+}

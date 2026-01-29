@@ -23,6 +23,14 @@ def deleted_tasks():
     deleted_tasks = get_deleted_tasks(include_done=True)
     return render_template("deleted_tasks.html", deleted_tasks=deleted_tasks)
 
+@app.route("/authorization")
+def authorization_users():
+    return render_template("authorization.html")
+
+@app.route("/registration")
+def registration_users():
+    return render_template("registration.html")
+
 @app.route("/add", methods=["POST"])
 def add_task():
     title = request.form["title"]

@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/registration.css') }}">
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <div>
+                <h1 class="hero-title">Регистрация</h1>
+                <p class="hero-subtitle">Создайте аккаунт, чтобы сохранить ваши задачи.</p>
+            </div>
+            <div class="chip">Новая учетная запись</div>
+        </header>
+
+        <section class="panel">
+            <form action="/register" method="post" class="auth-grid">
+                <input class="input" type="text" name="first_name" placeholder="Имя" required>
+                <input class="input" type="text" name="last_name" placeholder="Фамилия" required>
+                <input class="input full" type="email" name="email" placeholder="Email" required>
+                <input class="input" type="password" name="password" placeholder="Пароль" required>
+                <input class="input" type="password" name="password_confirm" placeholder="Повторите пароль" required>
+                <button class="btn full" type="submit">Создать аккаунт</button>
+            </form>
+
+            <div class="toolbar">
+                <a class="btn btn-ghost" href="/authorization">Уже есть аккаунт? Войти</a>
+            </div>
+        </section>
+
+        <div class="footer-actions">
+            <a class="btn btn-secondary" href="/">На главную</a>
+        </div>
+    </div>
+</body>
+</html>

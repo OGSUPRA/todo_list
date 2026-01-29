@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Authorization</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/authorization.css') }}">
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <div>
+                <h1 class="hero-title">Вход в аккаунт</h1>
+                <p class="hero-subtitle">Авторизуйтесь, чтобы продолжить работу со списком задач.</p>
+            </div>
+            <div class="chip">Безопасный вход</div>
+        </header>
+
+        <section class="panel">
+            <form action="/login" method="post" class="auth-grid">
+                <input class="input" type="text" name="username" placeholder="Логин или email" required>
+                <input class="input" type="password" name="password" placeholder="Пароль" required>
+                <button class="btn" type="submit">Войти</button>
+            </form>
+
+            <div class="toolbar">
+                <a class="btn btn-ghost" href="/registration">Нет аккаунта? Регистрация</a>
+            </div>
+        </section>
+
+        <div class="footer-actions">
+            <a class="btn btn-secondary" href="/">На главную</a>
+        </div>
+    </div>
+</body>
+</html>
