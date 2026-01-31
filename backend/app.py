@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+import os
 from db.models import init_db
 from services.tasks import (
     create_task,
@@ -10,10 +11,15 @@ from services.tasks import (
     delete_task,
     restore_task
 )
-from services.auth import authenticate_user
+from services.auth import (
+get_all_users
+)
 from services.registration import registration_user
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
+
+users_db = get_all_users()
 
 @app.route("/")
 def index():
@@ -25,18 +31,20 @@ def deleted_tasks():
     deleted_tasks = get_deleted_tasks(include_done=True)
     return render_template("deleted_tasks.html", deleted_tasks=deleted_tasks)
 
-@app.route("/authorization")
-def authorization_users():
-    return render_template("authorization.html")
-
-@app.route("/login", methods = ["POST"])
-def login_user():
-    login = request.form["username"]
-    password = request.form["password"]
-    if authenticate_user(login, password):
-        return redirect(url_for("index"))
-    else:
-        return redirect(url_for("authorization_users"))
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        if username in users_db and users_db[username] == password:
+            session['username'] = username
+            flash('Вы успешно вошли в систему!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Неверное имя пользователя или пароль', 'error')
+    
+    return render_template('login.html')
 
 @app.route("/registration")
 def registration_users():
