@@ -9,7 +9,8 @@ from services.tasks import (
     mark_all_tasks_done,
     mark_task_notdone,
     delete_task,
-    restore_task
+    restore_task,
+    search_user
 )
 from services.auth import (
     validate_user
@@ -21,11 +22,6 @@ user_exists
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-
-@app.route("/tasks")
-def tasks_list():
-    tasks = get_all_tasks(include_done=True)
-    return render_template("tasks.html", tasks=tasks)
 
 @app.route("/")
 def index():
@@ -42,8 +38,11 @@ def login():
         username = request.form['username']
         password = request.form['password']
         
+        user = search_user(username)
+
         if validate_user(username, password):
             session['username'] = username
+            session['user_id'] = user['id']
             flash('Вы успешно вошли в систему!', 'success')
             return redirect(url_for('tasks_list'))
         else:
@@ -68,11 +67,18 @@ def registration_users():
         flash('Регистрация успешна! Теперь войдите в систему', 'success')
         return redirect(url_for("login"))
 
+@app.route("/tasks")
+def tasks_list():
+    user_id = session['user_id']
+    tasks = get_all_tasks(user_id, include_done=True)
+    return render_template("tasks.html", tasks=tasks)
+
 @app.route("/add", methods=["POST"])
 def add_task():
     title = request.form["title"]
     description = request.form.get("description")
-    create_task(title, description)
+    user_id = session['user_id']
+    create_task(user_id, title, description)
     return redirect(url_for("tasks_list"))
 
 @app.route("/done/<int:task_id>")
@@ -110,6 +116,7 @@ def check_login():
 @app.route('/logout')
 def logout():
     session.pop('username', None)
+    session.pop('user_id', None)
     flash('Вы вышли из системы', 'info')
     return redirect(url_for('login'))
 

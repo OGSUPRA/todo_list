@@ -1,14 +1,14 @@
 from db.database import get_connection
 
-def create_task(title, description=None):
+def create_task(user_id, title, description=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    print(f"DEBUG: Create task: {title} description: {description}")
+    print(f"DEBUG: Create task: {title} description: {description} user_id: {user_id}")
 
     cursor.execute(
-        "INSERT INTO tasks (title, description) VALUES (?, ?)",
-        (title, description)
+        "INSERT INTO tasks (title, description, user_id) VALUES (?, ?, ?)",
+        (title, description, user_id)
     )
 
     rows_updated = cursor.rowcount
@@ -18,20 +18,32 @@ def create_task(title, description=None):
     conn.close()
 
 
-def get_all_tasks(include_done=True):
+def search_user(username):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    print(f"DEBUG: Start search: {username}")
+
+    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+
+    user = cursor.fetchone()
+    conn.close
+    return user
+
+def get_all_tasks(user_id, include_done=True):
     conn = get_connection()
     cursor = conn.cursor()
 
     if include_done:
         cursor.execute("""
             SELECT * FROM tasks
-            WHERE deleted_at IS NULL
-        """)
+            WHERE user_id = ? AND deleted_at IS NULL
+        """, (user_id,))
     else:
         cursor.execute("""
             SELECT * FROM tasks
-            WHERE status = 'todo' AND deleted_at IS NULL
-        """)
+            WHERE user_id = ? AND status = 'todo' AND deleted_at IS NULL
+        """, (user_id,))
 
     tasks = cursor.fetchall()
     conn.close() 
@@ -77,7 +89,7 @@ def mark_task_done(task_id):
     conn.close()
 
 
-def mark_all_tasks_done():   
+def mark_all_tasks_done():
     conn = get_connection()
     cursor = conn.cursor()
 
