@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <div>
+                <h1 class="hero-title">Todo List</h1>
+                <p class="hero-subtitle">Добро пожаловать! Организуйте задачи в стильном и спокойном пространстве.</p>
+            </div>
+            <div class="chip">Стартовый экран</div>
+        </header>
+
+        <section class="panel">
+            <div class="welcome-grid">
+                <div>
+                    <h2 class="section-title">Начать работу</h2>
+                    <p class="section-text">Войдите в аккаунт или создайте новый, чтобы сохранять задачи и возвращаться к ним позже.</p>
+                </div>
+                <div class="action-grid">
+                    <a class="btn" href="/login">Войти</a>
+                    <a class="btn btn-secondary" href="/registration">Регистрация</a>
+                    <a class="btn btn-ghost" href="/tasks">Открыть список задач</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

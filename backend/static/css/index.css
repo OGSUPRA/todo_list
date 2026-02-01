@@ -1,0 +1,29 @@
+﻿.section-title {
+    margin: 0 0 10px;
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 1.6rem;
+}
+
+.section-text {
+    margin: 0;
+    color: var(--muted);
+    font-size: 1.02rem;
+}
+
+.welcome-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: center;
+}
+
+.action-grid {
+    display: grid;
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .welcome-grid {
+        grid-template-columns: 1fr;
+    }
+}

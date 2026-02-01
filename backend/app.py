@@ -22,10 +22,14 @@ user_exists
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-@app.route("/")
-def index():
+@app.route("/tasks")
+def tasks_list():
     tasks = get_all_tasks(include_done=True)
     return render_template("tasks.html", tasks=tasks)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 @app.route("/deleted")
 def deleted_tasks():
@@ -41,7 +45,7 @@ def login():
         if validate_user(username, password):
             session['username'] = username
             flash('Вы успешно вошли в систему!', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('tasks_list'))
         else:
             flash('Неверное имя пользователя или пароль', 'error')
     
@@ -69,27 +73,27 @@ def add_task():
     title = request.form["title"]
     description = request.form.get("description")
     create_task(title, description)
-    return redirect(url_for("index"))
+    return redirect(url_for("tasks_list"))
 
 @app.route("/done/<int:task_id>")
 def done(task_id):
     mark_task_done(task_id)
-    return redirect(url_for("index"))
+    return redirect(url_for("tasks_list"))
 
 @app.route("/alldone")
 def alldone():
     mark_all_tasks_done()
-    return redirect(url_for("index"))
+    return redirect(url_for("tasks_list"))
 
 @app.route("/notdone/<int:task_id>")
 def notdone(task_id):
     mark_task_notdone(task_id)
-    return redirect(url_for("index"))
+    return redirect(url_for("tasks_list"))
 
 @app.route("/delete/<int:task_id>")
 def delete(task_id):
     delete_task(task_id)
-    return redirect(url_for("index"))
+    return redirect(url_for("tasks_list"))
 
 @app.route("/deleted/restore/<int:task_id>")
 def restore(task_id):
@@ -98,7 +102,7 @@ def restore(task_id):
 
 @app.before_request
 def check_login():
-    allowed = ['login', 'static', 'registration_users']
+    allowed = ['login', 'static', 'registration_users', 'index']
     if request.endpoint not in allowed:
         if 'username' not in session:
             return redirect(url_for('login'))
