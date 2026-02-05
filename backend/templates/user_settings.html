@@ -17,6 +17,21 @@
             <div class="chip">Профиль</div>
         </header>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-list">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">
+                            <div class="flash-title">
+                                {% if category == 'success' %}Успех{% elif category == 'error' %}Ошибка{% elif category == 'info' %}Инфо{% else %}Сообщение{% endif %}
+                            </div>
+                            <div class="flash-message">{{ message }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         <section class="profile-strip">
             <div class="profile-avatar">
                 {% if avatar_url %}
@@ -48,7 +63,7 @@
                     <h2 class="section-title">Имя пользователя</h2>
                     <p class="section-text">Обновите отображаемое имя.</p>
                     <form action="/user/name" method="post" class="form-grid">
-                        <input class="input" type="text" name="username" placeholder="Новое имя" required>
+                        <input class="input" type="text" name="new_name" placeholder="Новое имя" required>
                         <button class="btn" type="submit">Сохранить</button>
                     </form>
                 </div>
@@ -57,9 +72,8 @@
                     <h2 class="section-title">Пароль</h2>
                     <p class="section-text">Смените пароль, чтобы защитить аккаунт.</p>
                     <form action="/user/password" method="post" class="form-stack">
-                        <input class="input" type="password" name="current_password" placeholder="Текущий пароль" required>
+                        <input class="input" type="password" name="old_password" placeholder="Текущий пароль" required>
                         <input class="input" type="password" name="new_password" placeholder="Новый пароль" required>
-                        <input class="input" type="password" name="confirm_password" placeholder="Повторите пароль" required>
                         <button class="btn" type="submit">Обновить пароль</button>
                     </form>
                 </div>

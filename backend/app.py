@@ -22,7 +22,11 @@ user_exists
 )
 from services.users import (
     set_user_avatar,
-    get_user_avatar
+    get_user_avatar,
+    delete_user_by_id,
+    update_user_name_by_id,
+    check_user_password,
+    update_user_password_by_id
 )
 
 app = Flask(__name__)
@@ -175,6 +179,60 @@ def upload_avatar():
     set_user_avatar(user_id, relative_path)
 
     flash('Аватар успешно загружен', 'success')
+    return redirect(url_for('user_settings'))
+
+
+@app.route("/user/delete", methods=["POST"])
+def delete_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('Требуется авторизация', 'error')
+        return redirect(url_for('login'))
+
+    delete_user_by_id(user_id)
+    session.clear()
+    flash('Пользователь успешно удален', 'success')
+    return redirect(url_for('login'))
+
+
+@app.route("/user/name", methods=["POST"])
+def update_user_name():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('Требуется авторизация', 'error')
+        return redirect(url_for('login'))
+
+    new_name = request.form.get('new_name')
+    if not new_name:
+        flash('Имя не может быть пустым', 'error')
+        return redirect(url_for('user_settings'))
+
+    update_user_name_by_id(user_id, new_name)
+    session['username'] = new_name
+    flash('Имя пользователя успешно обновлено', 'success')
+    return redirect(url_for('user_settings'))
+
+
+@app.route("/user/password", methods=["POST"])
+def update_user_password():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('Требуется авторизация', 'error')
+        return redirect(url_for('login'))
+
+    old_password = request.form.get('old_password')
+    new_password = request.form.get('new_password')
+
+    if not old_password or not new_password:
+        flash('Поля не могут быть пустыми', 'error')
+        return redirect(url_for('user_settings'))
+
+    if not check_user_password(user_id, old_password):
+        flash('Неверный старый пароль', 'error')
+        return redirect(url_for('user_settings'))
+
+    update_user_password_by_id(user_id, new_password)
+    flash('Пароль успешно обновлен', 'success')
     return redirect(url_for('user_settings'))
 
 

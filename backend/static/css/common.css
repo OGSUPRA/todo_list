@@ -151,6 +151,47 @@ body {
     justify-content: flex-start;
 }
 
+.flash-list {
+    display: grid;
+    gap: 12px;
+    margin: -8px 0 24px;
+}
+
+.flash {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--card-strong);
+    box-shadow: var(--shadow);
+    color: var(--text);
+}
+
+.flash-title {
+    font-weight: 600;
+}
+
+.flash-message {
+    color: var(--muted);
+}
+
+.flash.success {
+    border-color: rgba(123, 220, 181, 0.35);
+    background: linear-gradient(135deg, rgba(123, 220, 181, 0.15), rgba(255, 255, 255, 0.08));
+}
+
+.flash.info {
+    border-color: rgba(97, 159, 255, 0.35);
+    background: linear-gradient(135deg, rgba(97, 159, 255, 0.15), rgba(255, 255, 255, 0.08));
+}
+
+.flash.error {
+    border-color: rgba(255, 107, 107, 0.45);
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 255, 255, 0.08));
+}
+
 @media (max-width: 900px) {
     .hero {
         grid-template-columns: 1fr;
