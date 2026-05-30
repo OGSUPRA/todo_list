@@ -1,3 +1,4 @@
+from datetime import timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
 import os
@@ -42,6 +43,15 @@ app = Flask(__name__)
 
 # Секретный ключ - для production используем переменную окружения
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+app.config.update(
+    PERMANENT_SESSION_LIFETIME=timedelta(
+        minutes=int(os.environ.get('SESSION_LIFETIME_MINUTES', '10080'))
+    ),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE=os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax'),
+    SESSION_COOKIE_SECURE=os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true',
+    SESSION_REFRESH_EACH_REQUEST=True,
+)
 
 # Настройка путей для загрузки файлов
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'images')
@@ -88,6 +98,7 @@ def login():
         user = search_user(username)
 
         if validate_user(username, password):
+            session.permanent = True
             session['username'] = username
             session['user_id'] = user['id']
             flash('Вы успешно вошли в систему!', 'success')
@@ -158,9 +169,13 @@ def restore(task_id):
 @app.before_request
 def check_login():
     allowed = ['login', 'static', 'registration_users', 'index']
-    if request.endpoint not in allowed:
-        if 'username' not in session:
-            return redirect(url_for('login'))
+    if request.endpoint is None or request.endpoint in allowed:
+        return None
+
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    session.permanent = True
 
 @app.route('/logout')
 def logout():

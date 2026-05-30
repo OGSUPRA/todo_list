@@ -11,6 +11,7 @@ services:
     environment:
       - FLASK_ENV=development
       - SECRET_KEY=your-secret-key-change-in-production-12345
+      - SESSION_LIFETIME_MINUTES=10080
       - PYTHONPATH=/app/backend
     working_dir: /app/backend
     command: gunicorn -w 4 -b 0.0.0.0:5000 app:app
