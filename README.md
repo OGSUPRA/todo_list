@@ -176,14 +176,19 @@ npm run test
 
 ## Деплой
 
-В репозитории есть workflow `.github/workflows/deploy.yml`.
+В репозитории есть два workflow:
+
+- `.github/workflows/ci.yml` — тесты и сборка
+- `.github/workflows/deploy.yml` — деплой только после успешного CI
 
 Сценарий:
 
-1. на сервере хранится проект в `/root/todo-app`
-2. GitHub Actions подключается по SSH
-3. выполняет `git pull`
-4. поднимает стек через `docker compose up -d --build --remove-orphans`
+1. push в `master` запускает CI
+2. backend-тесты и frontend-проверки проходят автоматически
+3. только если CI завершился успешно, запускается deploy workflow
+4. GitHub Actions подключается по SSH к серверу
+5. выполняет `git pull`
+6. поднимает стек через `docker compose up -d --build --remove-orphans`
 
 Перед первым деплоем нужно:
 
@@ -203,7 +208,6 @@ npm run test
 
 ## Что можно добавить позже
 
-- CI с запуском backend и frontend тестов
 - rate limiting
 - аудит действий пользователя
 - пагинацию и сортировки задач
