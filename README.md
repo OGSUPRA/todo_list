@@ -185,10 +185,11 @@ npm run test
 
 1. push в `master` запускает CI
 2. backend-тесты и frontend-проверки проходят автоматически
-3. только если CI завершился успешно, запускается deploy workflow
-4. GitHub Actions подключается по SSH к серверу
-5. выполняет `git pull`
-6. поднимает стек через `docker compose up -d --build --remove-orphans`
+3. CI дополнительно собирает Docker-образы `api` и `web`
+4. только если весь CI завершился успешно, запускается deploy workflow
+5. GitHub Actions подключается по SSH к серверу
+6. выполняет `git pull`
+7. поднимает стек через `docker compose up -d --build --remove-orphans`
 
 Перед первым деплоем нужно:
 
