@@ -18,3 +18,10 @@ README.md
 instance/*.db
 instance/*.db-journal
 *.sqlite3
+backend/tests/
+frontend/node_modules/
+frontend/dist/
+cloudbeaver-workspace/
+venv/
+backend/__pycache__/
+frontend/.vite/

@@ -1,81 +1,212 @@
-# TODO LIST — pet project (backend)
+# Todo Product
 
-Небольшое веб-приложение для управления личными задачами. Проект сделан как учебный, но оформлен так, чтобы показать базовую архитектуру backend-приложения: слои `routes -> services -> db`, отдельные шаблоны и статика, и работа с SQLite.
+Полноценный `API-first` Todo-проект, собранный как современное веб-приложение:
+
+- `FastAPI` вместо Flask
+- `PostgreSQL` вместо SQLite
+- `JWT access + refresh` вместо серверных сессий
+- `Vue 3 + Vite` вместо серверных HTML-шаблонов
+- `pgAdmin` вместо SQLite web admin
+
+Проект разделён на backend API, frontend SPA и production-ready Docker-инфраструктуру.
 
 ## Что умеет
-- Регистрация и вход пользователя (сессии Flask).
-- Создание задач с названием и описанием.
-- Просмотр списка задач пользователя.
-- Изменение статуса задачи: `todo` ↔ `done`.
-- Массовое завершение всех задач.
-- Мягкое удаление (soft delete) и восстановление задач.
-- Профиль пользователя: отображение имени и загрузка аватарки.
-- Настройки пользователя: Изменение аватарки, пароля, имени.
+
+- регистрация и вход пользователя
+- авторизация через JWT
+- refresh-механизм для продления сессии
+- CRUD по задачам
+- переключение статуса `todo/done`
+- массовое завершение задач
+- мягкое удаление и восстановление из архива
+- редактирование профиля
+- смена пароля
+- загрузка аватара
+- SQL-админка для PostgreSQL через `pgAdmin`
 
 ## Стек
-- Python 3.x
-- Flask + Jinja2
-- SQLite
-- HTML/CSS (шаблоны в `backend/templates`, стили в `backend/static/css`)
 
-## Архитектура и структура
-- `backend/app.py` — маршруты и сессии, инициализация БД, загрузка аватаров.
-- `backend/services/` — бизнес-логика:
-  - `tasks.py` — CRUD по задачам и статусы.
-  - `auth.py` — проверка пользователя.
-  - `registration.py` — регистрация и проверка уникальности логина.
-  - `users.py` — работа с профилем пользователя (аватар).
-- `backend/db/` — доступ к SQLite и схема:
-  - `database.py` — подключение.
-  - `models.py` — создание таблиц `users` и `tasks`.
+### Backend
 
-## Схема БД (кратко)
-**users**
-- `id`, `username`, `password`, `avatar_path`, `status_user`, `created_at`, `deleted_at`
+- `FastAPI`
+- `SQLAlchemy 2`
+- `Alembic`
+- `PostgreSQL`
+- `python-jose`
+- `passlib`
 
-**tasks**
-- `id`, `user_id`, `title`, `description`, `status`, `created_at`, `deleted_at`
+### Frontend
 
-## Запуск
-1. Установить зависимости:
-```bash
-pip install -r requirements.txt
+- `Vue 3`
+- `Vite`
+- `Pinia`
+- `Vue Router`
+- `Axios`
+
+### Infrastructure
+
+- `Docker Compose`
+- `Nginx` внутри frontend-контейнера
+- `pgAdmin 4`
+
+## Архитектура
+
+```text
+backend/
+  app/
+    api/           # роуты и зависимости
+    core/          # конфиг, база, security
+    models/        # SQLAlchemy модели
+    repositories/  # слой доступа к данным
+    schemas/       # Pydantic схемы
+    services/      # бизнес-логика
+    utils/         # файловые утилиты
+  alembic/         # миграции
+  tests/           # backend тесты
+
+frontend/
+  src/
+    components/    # UI-компоненты
+    lib/           # API-клиент, токены
+    router/        # маршруты
+    stores/        # auth store
+    views/         # страницы SPA
+    tests/         # frontend setup
 ```
 
-2. Запустить приложение:
+## Быстрый старт
+
+### 1. Подготовка окружения
+
+Создайте `.env` на основе примера:
+
 ```bash
-py backend/app.py
+cp .env.example .env
 ```
 
-После запуска создается файл базы данных `todo.db` в корне проекта.
+Минимум, что нужно изменить:
 
-## Скриншоты
-- Главная страница
-![main](https://github.com/user-attachments/assets/e97c81c5-2d77-429f-9233-b0695d76317c)
-- Авторизация
-![login_user](https://github.com/user-attachments/assets/2e8c7e1f-7361-46bc-83d2-22cf16fa895c)
-- Регистрация
-![reg_user](https://github.com/user-attachments/assets/ae8854e7-eec2-4d10-b420-11dc6d681a81)
-- Список задач
-![tasks_users](https://github.com/user-attachments/assets/ed2436b1-c1d1-4599-8a77-c438febf6408)
-- Корзина (удаленные задачи)
-![tasks_del](https://github.com/user-attachments/assets/7fc414fa-5359-4ceb-8542-985426ea0785)
-- Настройки профиля
-![user_settings](https://github.com/user-attachments/assets/70be4989-4978-4d2a-b636-35ed9ba6b882)
+- `SECRET_KEY`
+- `POSTGRES_PASSWORD`
+- `PGADMIN_DEFAULT_PASSWORD`
 
-## Роуты (основные)
-- `/` — стартовая страница
-- `/login`, `/registration` — авторизация и регистрация
-- `/tasks` — список задач
-- `/add`, `/done/<id>`, `/notdone/<id>`, `/delete/<id>` — действия над задачами
-- `/deleted`, `/deleted/restore/<id>` — корзина и восстановление
-- `/settings`, `/user/avatar` — настройки и загрузка аватара
+### 2. Запуск через Docker
 
-## Что можно улучшить дальше
-- Хэширование паролей (bcrypt/argon2).
-- Валидация данных и обработка ошибок.
-- Тесты сервисов и маршрутов (pytest).
+```bash
+docker compose up -d --build
+```
 
----
+После запуска:
 
-Проект делался как учебный, но показывает базовые навыки backend‑разработки: работу с БД, архитектуру слоев, авторизацию, сессии, загрузку файлов и HTML‑шаблоны.
+- приложение: `http://localhost:8081`
+- backend docs: `http://localhost:8081/api/docs`
+- pgAdmin: `http://localhost:5050`
+
+## Переменные окружения
+
+Основные переменные из `.env.example`:
+
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `ACCESS_TOKEN_TTL_MINUTES`
+- `REFRESH_TOKEN_TTL_DAYS`
+- `CORS_ORIGINS`
+- `MEDIA_ROOT`
+- `SECURE_COOKIES`
+- `PGADMIN_DEFAULT_EMAIL`
+- `PGADMIN_DEFAULT_PASSWORD`
+
+## Backend API
+
+Основные группы эндпоинтов:
+
+- `/api/v1/auth`
+- `/api/v1/tasks`
+- `/api/v1/users`
+- `/api/v1/health`
+
+Ключевые сценарии:
+
+- `POST /api/v1/auth/register` — регистрация
+- `POST /api/v1/auth/login` — вход
+- `POST /api/v1/auth/refresh` — refresh access token
+- `POST /api/v1/auth/logout` — выход
+- `GET /api/v1/users/me` — получить профиль
+- `PATCH /api/v1/users/me` — обновить профиль
+- `POST /api/v1/users/me/password` — сменить пароль
+- `POST /api/v1/users/me/avatar` — обновить аватар
+- `GET /api/v1/tasks` — список задач
+- `POST /api/v1/tasks` — создать задачу
+- `PATCH /api/v1/tasks/{task_id}` — обновить задачу
+- `POST /api/v1/tasks/{task_id}/toggle` — переключить статус
+- `DELETE /api/v1/tasks/{task_id}` — отправить в архив
+- `POST /api/v1/tasks/{task_id}/restore` — восстановить
+
+## Тесты
+
+### Backend
+
+```bash
+pytest
+```
+
+Покрываются основные сценарии:
+
+- регистрация, логин, refresh, logout
+- CRUD задач
+- архив и восстановление
+- профиль, аватар, пароль, удаление аккаунта
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run test
+```
+
+Есть smoke-тесты для:
+
+- token helpers
+- формы входа
+- списка задач
+
+## Деплой
+
+В репозитории есть workflow `.github/workflows/deploy.yml`.
+
+Сценарий:
+
+1. на сервере хранится проект в `/root/todo-app`
+2. GitHub Actions подключается по SSH
+3. выполняет `git pull`
+4. поднимает стек через `docker compose up -d --build --remove-orphans`
+
+Перед первым деплоем нужно:
+
+- подготовить `.env` на сервере
+- убедиться, что Docker и Docker Compose установлены
+
+## Что уже улучшено по сравнению со старой версией
+
+- убран серверный HTML-рендеринг
+- убрана привязка к SQLite
+- добавлено разделение на слои `api / services / repositories / models`
+- введены миграции Alembic
+- авторизация переведена на JWT
+- frontend вынесен в отдельное приложение
+- добавлены тесты
+- docker-инфраструктура упрощена и очищена
+
+## Что можно добавить позже
+
+- CI с запуском backend и frontend тестов
+- rate limiting
+- аудит действий пользователя
+- пагинацию и сортировки задач
+- роли пользователей
+
+Скриншоты и картинки можно добавить позже без изменения архитектуры.

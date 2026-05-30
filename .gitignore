@@ -2,3 +2,16 @@ venv/
 venv_flask/
 /todo.db
 /backend/static/images/*
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+node_modules/
+dist/
+backend/media/
+cloudbeaver-workspace/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

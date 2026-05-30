@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import timedelta
 
 from fastapi import HTTPException, status
@@ -64,7 +65,7 @@ class AuthService:
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Некорректный refresh token")
 
-        user = self.users.get_by_id(payload["sub"])
+        user = self.users.get_by_id(uuid.UUID(payload["sub"]))
         if user is None or user.token_version != payload.get("tv"):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Сессия устарела")
         return user

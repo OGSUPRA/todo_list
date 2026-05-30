@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
@@ -36,7 +37,7 @@ def get_current_user(
     if payload.get("type") != "access":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Некорректный access token")
 
-    user = UserRepository(session).get_by_id(payload["sub"])
+    user = UserRepository(session).get_by_id(uuid.UUID(payload["sub"]))
     if user is None or user.token_version != payload.get("tv"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Сессия устарела")
 
