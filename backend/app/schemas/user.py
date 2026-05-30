@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -12,7 +13,7 @@ class UserResponse(ORMModel):
     id: uuid.UUID
     username: str
     email: EmailStr
-    avatar_path: str | None
+    avatar_path: Optional[str]
     created_at: datetime
 
 

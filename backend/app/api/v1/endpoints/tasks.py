@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Query, status
+from typing import Optional
 
 from app.api.deps import CurrentUser, DBSession
 from app.schemas.common import APIMessage
@@ -17,8 +18,8 @@ def list_tasks(
     session: DBSession,
     current_user: CurrentUser,
     include_deleted: bool = Query(default=False),
-    status_filter: str | None = Query(default=None, alias="status"),
-    search: str | None = Query(default=None),
+    status_filter: Optional[str] = Query(default=None, alias="status"),
+    search: Optional[str] = Query(default=None),
 ) -> list[TaskResponse]:
     return TaskService(session).list_tasks(
         current_user.id,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,9 +15,9 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    title: str | None = Field(default=None, min_length=1, max_length=180)
-    description: str | None = Field(default=None, max_length=5000)
-    status: str | None = Field(default=None, pattern="^(todo|done)$")
+    title: Optional[str] = Field(default=None, min_length=1, max_length=180)
+    description: Optional[str] = Field(default=None, max_length=5000)
+    status: Optional[str] = Field(default=None, pattern="^(todo|done)$")
 
 
 class TaskResponse(ORMModel):

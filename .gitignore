@@ -1,4 +1,5 @@
 venv/
+.venv_backend/
 venv_flask/
 /todo.db
 /backend/static/images/*

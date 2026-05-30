@@ -3,6 +3,12 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 
+def test_healthcheck_returns_ok(client: TestClient) -> None:
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_register_login_me_refresh_and_logout_flow(client: TestClient) -> None:
     register_response = client.post(
         "/api/v1/auth/register",
@@ -27,7 +33,8 @@ def test_register_login_me_refresh_and_logout_flow(client: TestClient) -> None:
     assert me_response.status_code == 200
     assert me_response.json()["email"] == "anna@example.com"
 
-    refresh_response = client.post("/api/v1/auth/refresh", cookies=login_response.cookies)
+    client.cookies.set("todo_refresh_token", login_response.cookies.get("todo_refresh_token"))
+    refresh_response = client.post("/api/v1/auth/refresh")
     assert refresh_response.status_code == 200
     refreshed_token = refresh_response.json()["access_token"]
     assert refreshed_token

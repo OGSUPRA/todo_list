@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -19,8 +20,8 @@ class TaskService:
         self,
         user_id: uuid.UUID,
         include_deleted: bool = False,
-        status_filter: str | None = None,
-        search: str | None = None,
+        status_filter: Optional[str] = None,
+        search: Optional[str] = None,
     ) -> list[Task]:
         return self.tasks.list_for_user(user_id, include_deleted=include_deleted, status=status_filter, search=search)
 

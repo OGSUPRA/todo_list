@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Optional
 
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
@@ -16,8 +17,8 @@ class TaskRepository:
         self,
         user_id: uuid.UUID,
         include_deleted: bool,
-        status: str | None,
-        search: str | None,
+        status: Optional[str],
+        search: Optional[str],
     ) -> list[Task]:
         statement: Select[tuple[Task]] = select(Task).where(Task.user_id == user_id)
         if not include_deleted:
@@ -29,7 +30,7 @@ class TaskRepository:
         statement = statement.order_by(Task.created_at.desc())
         return list(self.session.execute(statement).scalars().all())
 
-    def get_for_user(self, task_id: uuid.UUID, user_id: uuid.UUID) -> Task | None:
+    def get_for_user(self, task_id: uuid.UUID, user_id: uuid.UUID) -> Optional[Task]:
         statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
         return self.session.execute(statement).scalar_one_or_none()
 

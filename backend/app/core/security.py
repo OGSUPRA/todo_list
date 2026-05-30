@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Optional
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -24,7 +24,7 @@ def create_token(
     subject: str,
     token_type: str,
     expires_delta: timedelta,
-    extra_claims: dict[str, Any] | None = None,
+    extra_claims: Optional[dict[str, Any]] = None,
 ) -> str:
     expire_at = datetime.now(timezone.utc) + expires_delta
     payload: dict[str, Any] = {"sub": subject, "type": token_type, "exp": expire_at}

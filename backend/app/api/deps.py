@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from typing import Annotated
+from typing import Optional
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
@@ -14,7 +15,7 @@ from app.repositories.user import UserRepository
 DBSession = Annotated[Session, Depends(get_db_session)]
 
 
-def _extract_token(authorization: str | None) -> str:
+def _extract_token(authorization: Optional[str]) -> str:
     if not authorization:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Требуется авторизация")
 
@@ -26,7 +27,7 @@ def _extract_token(authorization: str | None) -> str:
 
 def get_current_user(
     session: DBSession,
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[Optional[str], Header()] = None,
 ) -> User:
     token = _extract_token(authorization)
     try:
