@@ -1,20 +1,20 @@
 <template>
   <AppShell
     title="Панель задач с живым API"
-    subtitle="Управляйте активными и выполненными задачами, не перезагружая страницу и не касаясь серверных шаблонов."
+    subtitle="Управляйте активными и выполненными задачами, сортируйте поток по приоритету и держите темп без перезагрузок."
   >
     <div class="stats fade-up">
       <section class="surface stat-card">
         <span>Всего задач</span>
-        <strong>{{ tasks.length }}</strong>
+        <strong>{{ summary.total }}</strong>
       </section>
       <section class="surface stat-card">
         <span>Активных</span>
-        <strong>{{ todoCount }}</strong>
+        <strong>{{ summary.todo }}</strong>
       </section>
       <section class="surface stat-card">
         <span>Выполненных</span>
-        <strong>{{ doneCount }}</strong>
+        <strong>{{ summary.done }}</strong>
       </section>
     </div>
 
@@ -24,49 +24,78 @@
 
     <TaskList
       :tasks="tasks"
+      :meta="meta"
+      :summary="summary"
       title="Актуальный список"
       heading-eyebrow="Ежедневный ритм"
-      :search="search"
-      :status-filter="statusFilter"
+      :search="filters.search"
+      :status-filter="filters.status"
+      :sort-by="filters.sort_by"
+      :sort-order="filters.sort_order"
+      :page-size="filters.page_size"
+      empty-title="Пока пусто"
+      empty-text="Добавьте первую задачу или измените фильтр, чтобы увидеть больше данных."
       @archive="archiveTask"
       @toggle="toggleTask"
       @update="updateTask"
       @search-change="onSearchChange"
       @status-change="onStatusChange"
+      @sort-by-change="onSortByChange"
+      @sort-order-change="onSortOrderChange"
+      @page-change="onPageChange"
+      @page-size-change="onPageSizeChange"
     />
   </AppShell>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 
 import AppShell from "@/components/AppShell.vue";
 import TaskComposer from "@/components/TaskComposer.vue";
 import TaskList from "@/components/TaskList.vue";
 import { api } from "@/lib/api";
-import type { Task } from "@/types";
+import type { PaginationMeta, Task, TaskListResponse, TaskSummary } from "@/types";
 
 const tasks = ref<Task[]>([]);
 const notice = ref("");
-const search = ref("");
-const statusFilter = ref("");
+const meta = ref<PaginationMeta | null>(null);
+const summary = ref<TaskSummary>({
+  total: 0,
+  todo: 0,
+  done: 0,
+  archived: 0,
+});
 
-const todoCount = computed(() => tasks.value.filter((task) => task.status === "todo").length);
-const doneCount = computed(() => tasks.value.filter((task) => task.status === "done").length);
+const filters = reactive({
+  search: "",
+  status: "",
+  page: 1,
+  page_size: 10,
+  sort_by: "created_at",
+  sort_order: "desc",
+});
 
 async function fetchTasks() {
-  const { data } = await api.get<Task[]>("/tasks", {
+  const { data } = await api.get<TaskListResponse>("/tasks", {
     params: {
-      search: search.value || undefined,
-      status: statusFilter.value || undefined,
+      search: filters.search || undefined,
+      status: filters.status || undefined,
+      page: filters.page,
+      page_size: filters.page_size,
+      sort_by: filters.sort_by,
+      sort_order: filters.sort_order,
     },
   });
-  tasks.value = data;
+  tasks.value = data.items;
+  meta.value = data.meta;
+  summary.value = data.summary;
 }
 
 async function createTask(payload: { title: string; description: string }) {
   await api.post("/tasks", payload);
   notice.value = "Задача добавлена";
+  filters.page = 1;
   await fetchTasks();
 }
 
@@ -93,13 +122,42 @@ async function markAllDone() {
   await fetchTasks();
 }
 
+function resetPage() {
+  filters.page = 1;
+}
+
 function onSearchChange(value: string) {
-  search.value = value;
+  filters.search = value;
+  resetPage();
   void fetchTasks();
 }
 
 function onStatusChange(value: string) {
-  statusFilter.value = value;
+  filters.status = value;
+  resetPage();
+  void fetchTasks();
+}
+
+function onSortByChange(value: string) {
+  filters.sort_by = value;
+  resetPage();
+  void fetchTasks();
+}
+
+function onSortOrderChange(value: string) {
+  filters.sort_order = value;
+  resetPage();
+  void fetchTasks();
+}
+
+function onPageChange(value: number) {
+  filters.page = value;
+  void fetchTasks();
+}
+
+function onPageSizeChange(value: number) {
+  filters.page_size = value;
+  resetPage();
   void fetchTasks();
 }
 

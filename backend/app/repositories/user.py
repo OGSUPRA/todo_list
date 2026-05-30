@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional, Union
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import User
@@ -33,3 +33,11 @@ class UserRepository:
         self.session.flush()
         self.session.refresh(user)
         return user
+
+    def list_users(self) -> list[User]:
+        statement = select(User).order_by(User.created_at.desc())
+        return list(self.session.execute(statement).scalars().all())
+
+    def count_by_role(self) -> list[tuple[str, int]]:
+        statement = select(User.role, func.count(User.id)).group_by(User.role).order_by(User.role)
+        return [(role, int(count)) for role, count in self.session.execute(statement).all()]

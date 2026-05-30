@@ -4,6 +4,10 @@
       <div>
         <div class="eyebrow">{{ headingEyebrow }}</div>
         <h2>{{ title }}</h2>
+        <p v-if="summary" class="summary-line">
+          Всего: {{ summary.total }} · Активных: {{ summary.todo }} · Выполненных: {{ summary.done }} · В архиве:
+          {{ summary.archived }}
+        </p>
       </div>
 
       <div class="filters">
@@ -11,7 +15,7 @@
           v-model="localSearch"
           class="input compact"
           type="search"
-          placeholder="Поиск по названию"
+          placeholder="Поиск по названию и описанию"
           @input="emit('search-change', localSearch)"
         />
         <select v-model="localStatus" class="select compact" @change="emit('status-change', localStatus)">
@@ -19,7 +23,28 @@
           <option value="todo">Только активные</option>
           <option value="done">Только выполненные</option>
         </select>
+        <select v-model="localSortBy" class="select compact" @change="emit('sort-by-change', localSortBy)">
+          <option value="created_at">По дате создания</option>
+          <option value="updated_at">По обновлению</option>
+          <option value="title">По названию</option>
+          <option value="status">По статусу</option>
+        </select>
+        <select v-model="localSortOrder" class="select compact" @change="emit('sort-order-change', localSortOrder)">
+          <option value="desc">Сначала новые</option>
+          <option value="asc">Сначала старые</option>
+        </select>
+        <select v-model.number="localPageSize" class="select compact" @change="emit('page-size-change', localPageSize)">
+          <option :value="5">5 на странице</option>
+          <option :value="10">10 на странице</option>
+          <option :value="20">20 на странице</option>
+          <option :value="50">50 на странице</option>
+        </select>
       </div>
+    </div>
+
+    <div v-if="meta" class="meta-row">
+      <span>Страница {{ meta.page }} из {{ meta.total_pages }}</span>
+      <span>Найдено {{ meta.total_items }}</span>
     </div>
 
     <div v-if="tasks.length" class="task-grid">
@@ -46,30 +71,25 @@
               {{ task.status === "done" ? "Вернуть в работу" : "Отметить готовой" }}
             </button>
             <button class="btn ghost" type="button" @click="startEditing(task)">Редактировать</button>
-            <button
-              v-if="task.is_deleted"
-              class="btn"
-              type="button"
-              @click="emit('restore', task.id)"
-            >
-              Восстановить
-            </button>
-            <button
-              v-else
-              class="btn danger"
-              type="button"
-              @click="emit('archive', task.id)"
-            >
-              В архив
-            </button>
+            <button v-if="task.is_deleted" class="btn" type="button" @click="emit('restore', task.id)">Восстановить</button>
+            <button v-else class="btn danger" type="button" @click="emit('archive', task.id)">В архив</button>
           </div>
         </div>
       </article>
     </div>
 
     <div v-else class="empty-state">
-      <strong>Пока пусто</strong>
-      <p>Добавьте первую задачу или измените фильтр, чтобы увидеть больше данных.</p>
+      <strong>{{ emptyTitle }}</strong>
+      <p>{{ emptyText }}</p>
+    </div>
+
+    <div v-if="meta" class="pagination-row">
+      <button class="btn ghost" type="button" :disabled="!meta.has_previous" @click="emit('page-change', meta.page - 1)">
+        Назад
+      </button>
+      <button class="btn ghost" type="button" :disabled="!meta.has_next" @click="emit('page-change', meta.page + 1)">
+        Вперёд
+      </button>
     </div>
   </section>
 </template>
@@ -77,7 +97,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from "vue";
 
-import type { Task } from "@/types";
+import type { PaginationMeta, Task, TaskSummary } from "@/types";
 
 const props = defineProps<{
   tasks: Task[];
@@ -85,6 +105,13 @@ const props = defineProps<{
   headingEyebrow: string;
   search: string;
   statusFilter: string;
+  sortBy: string;
+  sortOrder: string;
+  pageSize: number;
+  meta: PaginationMeta | null;
+  summary?: TaskSummary | null;
+  emptyTitle?: string;
+  emptyText?: string;
 }>();
 
 const emit = defineEmits<{
@@ -94,6 +121,10 @@ const emit = defineEmits<{
   update: [taskId: string, payload: { title: string; description: string }];
   "search-change": [value: string];
   "status-change": [value: string];
+  "sort-by-change": [value: string];
+  "sort-order-change": [value: string];
+  "page-change": [page: number];
+  "page-size-change": [pageSize: number];
 }>();
 
 const editingTaskId = ref<string | null>(null);
@@ -103,6 +134,9 @@ const editForm = reactive({
 });
 const localSearch = ref(props.search);
 const localStatus = ref(props.statusFilter);
+const localSortBy = ref(props.sortBy);
+const localSortOrder = ref(props.sortOrder);
+const localPageSize = ref(props.pageSize);
 
 watch(
   () => props.search,
@@ -115,6 +149,27 @@ watch(
   () => props.statusFilter,
   (value) => {
     localStatus.value = value;
+  },
+);
+
+watch(
+  () => props.sortBy,
+  (value) => {
+    localSortBy.value = value;
+  },
+);
+
+watch(
+  () => props.sortOrder,
+  (value) => {
+    localSortOrder.value = value;
+  },
+);
+
+watch(
+  () => props.pageSize,
+  (value) => {
+    localPageSize.value = value;
   },
 );
 
@@ -146,7 +201,9 @@ function formatDate(value: string) {
 <style scoped>
 .section-head,
 .filters,
-.task-topline {
+.task-topline,
+.meta-row,
+.pagination-row {
   display: flex;
   gap: 12px;
 }
@@ -162,12 +219,33 @@ function formatDate(value: string) {
   font-size: 1.35rem;
 }
 
+.summary-line {
+  margin: 10px 0 0;
+  color: #5f6c7c;
+}
+
 .filters {
   flex-wrap: wrap;
 }
 
 .compact {
-  min-width: 220px;
+  min-width: 180px;
+}
+
+.meta-row,
+.pagination-row {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.meta-row {
+  color: #667587;
+  margin-bottom: 16px;
+}
+
+.pagination-row {
+  margin-top: 18px;
 }
 
 .task-grid {
@@ -248,7 +326,7 @@ function formatDate(value: string) {
 
   .compact {
     min-width: 0;
-    flex: 1 1 220px;
+    flex: 1 1 180px;
   }
 }
 </style>

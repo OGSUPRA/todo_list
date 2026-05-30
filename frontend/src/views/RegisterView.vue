@@ -23,6 +23,14 @@
           <input id="password" v-model="form.password" class="input" type="password" required />
         </div>
 
+        <div class="field">
+          <label for="role">Тариф доступа</label>
+          <select id="role" v-model="form.role" class="select">
+            <option value="standard">Standart</option>
+            <option value="vip">VIP</option>
+          </select>
+        </div>
+
         <div v-if="error" class="notice error">{{ error }}</div>
 
         <div class="inline-actions">
@@ -47,6 +55,7 @@ const form = reactive({
   username: "",
   email: "",
   password: "",
+  role: "standard" as const,
 });
 
 async function submit() {

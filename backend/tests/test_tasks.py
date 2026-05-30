@@ -14,7 +14,8 @@ def test_task_crud_archive_restore_and_filters(client: TestClient, auth_headers:
 
     list_response = client.get("/api/v1/tasks", headers=auth_headers)
     assert list_response.status_code == 200
-    assert len(list_response.json()) == 1
+    assert len(list_response.json()["items"]) == 1
+    assert list_response.json()["meta"]["page"] == 1
 
     update_response = client.patch(
         f"/api/v1/tasks/{task_id}",
@@ -30,22 +31,22 @@ def test_task_crud_archive_restore_and_filters(client: TestClient, auth_headers:
 
     search_response = client.get("/api/v1/tasks", headers=auth_headers, params={"search": "production"})
     assert search_response.status_code == 200
-    assert len(search_response.json()) == 1
+    assert len(search_response.json()["items"]) == 1
 
     archive_response = client.delete(f"/api/v1/tasks/{task_id}", headers=auth_headers)
     assert archive_response.status_code == 200
 
     active_tasks_response = client.get("/api/v1/tasks", headers=auth_headers)
     assert active_tasks_response.status_code == 200
-    assert active_tasks_response.json() == []
+    assert active_tasks_response.json()["items"] == []
 
     deleted_tasks_response = client.get(
         "/api/v1/tasks",
         headers=auth_headers,
-        params={"include_deleted": True},
+        params={"only_deleted": True},
     )
     assert deleted_tasks_response.status_code == 200
-    assert deleted_tasks_response.json()[0]["is_deleted"] is True
+    assert deleted_tasks_response.json()["items"][0]["is_deleted"] is True
 
     restore_response = client.post(f"/api/v1/tasks/{task_id}/restore", headers=auth_headers)
     assert restore_response.status_code == 200
@@ -64,4 +65,20 @@ def test_mark_all_done_updates_all_open_tasks(client: TestClient, auth_headers: 
     assert response.status_code == 200
 
     tasks_response = client.get("/api/v1/tasks", headers=auth_headers)
-    assert all(task["status"] == "done" for task in tasks_response.json())
+    assert all(task["status"] == "done" for task in tasks_response.json()["items"])
+
+
+def test_task_pagination_and_sorting(client: TestClient, auth_headers: dict[str, str]) -> None:
+    for title in ["Charlie", "Bravo", "Alpha"]:
+        client.post("/api/v1/tasks", headers=auth_headers, json={"title": title, "description": ""})
+
+    response = client.get(
+        "/api/v1/tasks",
+        headers=auth_headers,
+        params={"page": 1, "page_size": 2, "sort_by": "title", "sort_order": "asc"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert [item["title"] for item in payload["items"]] == ["Alpha", "Bravo"]
+    assert payload["meta"]["total_items"] == 3
+    assert payload["meta"]["total_pages"] == 2

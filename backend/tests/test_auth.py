@@ -20,6 +20,7 @@ def test_register_login_me_refresh_and_logout_flow(client: TestClient) -> None:
     )
     assert register_response.status_code == 201
     assert register_response.json()["username"] == "anna"
+    assert register_response.json()["role"] == "standard"
 
     login_response = client.post(
         "/api/v1/auth/login",
@@ -64,3 +65,26 @@ def test_login_rejects_invalid_password(client: TestClient) -> None:
         json={"username": "boris", "password": "wrong-password"},
     )
     assert response.status_code == 401
+
+
+def test_rate_limit_blocks_excessive_login_attempts(client: TestClient) -> None:
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "limit-user",
+            "email": "limit-user@example.com",
+            "password": "strong-password",
+        },
+        headers={"X-Forwarded-For": "10.0.0.55"},
+    )
+
+    last_response = None
+    for _ in range(21):
+        last_response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "limit-user", "password": "wrong-password"},
+            headers={"X-Forwarded-For": "10.0.0.55"},
+        )
+
+    assert last_response is not None
+    assert last_response.status_code == 429

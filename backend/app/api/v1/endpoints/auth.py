@@ -11,6 +11,7 @@ from app.schemas.auth import LoginRequest, RegisterRequest, TokenPayload
 from app.schemas.common import APIMessage
 from app.schemas.user import UserResponse
 from app.services.auth import AuthService
+from app.services.audit import AuditService
 
 router = APIRouter()
 
@@ -28,12 +29,12 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, session: DBSession) -> User:
+def register(request: Request, payload: RegisterRequest, session: DBSession) -> User:
     return AuthService(session).register(payload)
 
 
 @router.post("/login", response_model=TokenPayload)
-def login(payload: LoginRequest, response: Response, session: DBSession) -> TokenPayload:
+def login(request: Request, payload: LoginRequest, response: Response, session: DBSession) -> TokenPayload:
     service = AuthService(session)
     user = service.authenticate(payload)
     token_payload, refresh_token = service.build_token_pair(user)
@@ -55,9 +56,16 @@ def refresh(request: Request, response: Response, session: DBSession) -> TokenPa
 
 
 @router.post("/logout", response_model=APIMessage)
-def logout(current_user: CurrentUser, response: Response, session: DBSession) -> APIMessage:
+def logout(request: Request, current_user: CurrentUser, response: Response, session: DBSession) -> APIMessage:
     current_user.token_version += 1
     session.commit()
+    AuditService(session).record_event(
+        action="auth.logout",
+        category="auth",
+        user=current_user,
+        entity_type="user",
+        entity_id=str(current_user.id),
+    )
     response.delete_cookie(settings.refresh_cookie_name, path="/api/v1/auth")
     return APIMessage(detail="Вы вышли из системы")
 

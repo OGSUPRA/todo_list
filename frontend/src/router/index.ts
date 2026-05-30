@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { useAuthStore } from "@/stores/auth";
 import ArchivedView from "@/views/ArchivedView.vue";
+import AdminView from "@/views/AdminView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import LoginView from "@/views/LoginView.vue";
 import RegisterView from "@/views/RegisterView.vue";
@@ -40,6 +41,12 @@ const router = createRouter({
       component: SettingsView,
       meta: { requiresAuth: true },
     },
+    {
+      path: "/admin",
+      name: "admin",
+      component: AdminView,
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
   ],
 });
 
@@ -51,6 +58,10 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: "login" };
+  }
+
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return { name: "dashboard" };
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {

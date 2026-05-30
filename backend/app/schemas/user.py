@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
 from app.schemas.common import ORMModel
+
+PublicRole = Literal["vip", "standard"]
+SystemRole = Literal["admin", "vip", "standard"]
 
 
 class UserResponse(ORMModel):
@@ -14,6 +17,7 @@ class UserResponse(ORMModel):
     username: str
     email: EmailStr
     avatar_path: Optional[str]
+    role: SystemRole
     created_at: datetime
 
 
@@ -25,3 +29,7 @@ class UserUpdate(BaseModel):
 class PasswordChangeRequest(BaseModel):
     current_password: str = Field(min_length=8, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class UserRoleUpdateRequest(BaseModel):
+    role: SystemRole

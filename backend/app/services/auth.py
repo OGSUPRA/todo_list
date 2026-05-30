@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import create_token, decode_token, hash_password, verify_password
-from app.models import User
+from app.models import User, UserRole
 from app.repositories.user import UserRepository
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenPayload
+from app.services.audit import AuditService
 
 
 class AuthService:
@@ -28,17 +29,39 @@ class AuthService:
             username=payload.username,
             email=payload.email,
             password_hash=hash_password(payload.password),
+            role=UserRole.ADMIN.value if payload.email in settings.admin_emails else payload.role,
         )
         created_user = self.users.add(user)
         self.session.commit()
+        AuditService(self.session).record_event(
+            action="auth.register",
+            category="auth",
+            user=created_user,
+            entity_type="user",
+            entity_id=str(created_user.id),
+            details={"role": created_user.role},
+        )
         return created_user
 
     def authenticate(self, payload: LoginRequest) -> User:
         user = self.users.get_by_username_or_email(payload.username)
         if user is None or not verify_password(payload.password, user.password_hash):
+            AuditService(self.session).record_event(
+                action="auth.login_failed",
+                category="auth",
+                details={"username": payload.username},
+            )
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверные учетные данные")
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Пользователь деактивирован")
+        AuditService(self.session).record_event(
+            action="auth.login",
+            category="auth",
+            user=user,
+            entity_type="user",
+            entity_id=str(user.id),
+            details={"role": user.role},
+        )
         return user
 
     def build_token_pair(self, user: User) -> tuple[TokenPayload, str]:

@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     media_root: str = str(BASE_DIR / "media")
     refresh_cookie_name: str = "todo_refresh_token"
     secure_cookies: bool = False
+    admin_emails: list[str] = ["admin@example.com"]
+    auth_rate_limit: str = "20/minute"
+    write_rate_limit: str = "80/minute"
+    read_rate_limit: str = "240/minute"
+    metrics_enabled: bool = True
+    grafana_url: str = "http://localhost:3000"
+    prometheus_url: str = "http://localhost:9090"
+    loki_url: str = "http://localhost:3100"
+    pgadmin_url: str = "http://localhost:5050"
 
 
 settings = Settings()

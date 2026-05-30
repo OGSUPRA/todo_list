@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db_session
 from app.core.security import decode_token
-from app.models import User
+from app.models import User, UserRole
 from app.repositories.user import UserRepository
 
 DBSession = Annotated[Session, Depends(get_db_session)]
@@ -46,3 +46,12 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_admin(current_user: CurrentUser) -> User:
+    if current_user.role != UserRole.ADMIN.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Требуются права администратора")
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]

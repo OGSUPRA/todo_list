@@ -14,7 +14,10 @@
           </div>
           <div>
             <div class="eyebrow">Ваш аккаунт</div>
-            <strong>{{ user?.username }}</strong>
+            <div class="profile-headline">
+              <strong>{{ user?.username }}</strong>
+              <span v-if="user" class="role-pill" :class="user.role">{{ roleLabel(user.role) }}</span>
+            </div>
             <div class="muted">{{ user?.email }}</div>
           </div>
         </aside>
@@ -24,6 +27,7 @@
         <RouterLink class="nav-link" to="/">Задачи</RouterLink>
         <RouterLink class="nav-link" to="/archived">Архив</RouterLink>
         <RouterLink class="nav-link" to="/settings">Профиль</RouterLink>
+        <RouterLink v-if="auth.isAdmin" class="nav-link" to="/admin">Админка</RouterLink>
         <button class="btn ghost" type="button" @click="onLogout">Выйти</button>
       </nav>
 
@@ -53,6 +57,14 @@ const initials = computed(() => auth.user?.username.slice(0, 2).toUpperCase() ??
 async function onLogout() {
   await auth.logout();
   await router.push({ name: "login" });
+}
+
+function roleLabel(role: string) {
+  return {
+    admin: "Admin",
+    vip: "VIP",
+    standard: "Standart",
+  }[role] ?? role;
 }
 </script>
 
@@ -96,6 +108,13 @@ async function onLogout() {
   gap: 16px;
 }
 
+.profile-headline {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .profile-orb {
   width: 72px;
   height: 72px;
@@ -127,6 +146,33 @@ async function onLogout() {
 .muted {
   color: #647284;
   margin-top: 4px;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.role-pill.admin {
+  background: rgba(185, 61, 47, 0.12);
+  color: #7f2418;
+}
+
+.role-pill.vip {
+  background: rgba(166, 120, 23, 0.12);
+  color: #8a6113;
+}
+
+.role-pill.standard {
+  background: rgba(45, 94, 195, 0.12);
+  color: #264f9f;
 }
 
 .content-grid {

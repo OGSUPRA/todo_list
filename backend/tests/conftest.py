@@ -14,10 +14,14 @@ from sqlalchemy.pool import StaticPool
 os.environ["SECRET_KEY"] = "test-secret-key-with-at-least-32-characters"
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["MEDIA_ROOT"] = str(Path(__file__).parent / "media")
+os.environ["ADMIN_EMAILS"] = '["admin@example.com"]'
 Path(os.environ["MEDIA_ROOT"]).mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.api.deps import get_db_session
+import app.main as app_main_module
+import app.core.database as core_database_module
+from app.core.rate_limit import reset_rate_limits
 from app.main import app
 from app.models import Base
 from app.core.config import settings
@@ -39,6 +43,8 @@ def override_get_db_session() -> Generator[Session, None, None]:
 
 
 app.dependency_overrides[get_db_session] = override_get_db_session
+app_main_module.SessionLocal = TestingSessionLocal
+core_database_module.SessionLocal = TestingSessionLocal
 
 
 @pytest.fixture(autouse=True)
@@ -49,6 +55,7 @@ def reset_state(tmp_path: Path) -> Generator[None, None, None]:
     media_root = tmp_path / "media"
     media_root.mkdir(parents=True, exist_ok=True)
     settings.media_root = str(media_root)
+    reset_rate_limits()
 
     yield
 
@@ -66,10 +73,28 @@ def auth_headers(client: TestClient) -> dict[str, str]:
         "email": "tester@example.com",
         "password": "strong-password",
     }
-    client.post("/api/v1/auth/register", json=user_payload)
+    client.post("/api/v1/auth/register", json=user_payload, headers={"X-Forwarded-For": "10.0.0.2"})
     response = client.post(
         "/api/v1/auth/login",
         json={"username": user_payload["username"], "password": user_payload["password"]},
+        headers={"X-Forwarded-For": "10.0.0.2"},
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def admin_headers(client: TestClient) -> dict[str, str]:
+    user_payload = {
+        "username": "root",
+        "email": "admin@example.com",
+        "password": "strong-password",
+    }
+    client.post("/api/v1/auth/register", json=user_payload, headers={"X-Forwarded-For": "10.0.0.3"})
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"username": user_payload["username"], "password": user_payload["password"]},
+        headers={"X-Forwarded-For": "10.0.0.3"},
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

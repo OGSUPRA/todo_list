@@ -41,3 +41,36 @@ def test_profile_avatar_password_and_delete_flow(client: TestClient, auth_header
 
     after_delete_response = client.get("/api/v1/users/me", headers=fresh_headers)
     assert after_delete_response.status_code == 401
+
+
+def test_admin_can_view_audit_and_change_roles(
+    client: TestClient,
+    admin_headers: dict[str, str],
+    auth_headers: dict[str, str],
+) -> None:
+    overview_response = client.get("/api/v1/admin/overview", headers=admin_headers)
+    assert overview_response.status_code == 200
+    assert "monitoring" in overview_response.json()
+
+    audit_response = client.get("/api/v1/admin/audit-events", headers=admin_headers)
+    assert audit_response.status_code == 200
+    assert audit_response.json()["meta"]["total_items"] >= 1
+
+    users_response = client.get("/api/v1/admin/users", headers=admin_headers)
+    assert users_response.status_code == 200
+    assert users_response.json()["meta"]["total_items"] >= 2
+
+    me_response = client.get("/api/v1/users/me", headers=auth_headers)
+    user_id = me_response.json()["id"]
+    role_response = client.patch(
+        f"/api/v1/users/{user_id}/role",
+        headers=admin_headers,
+        json={"role": "vip"},
+    )
+    assert role_response.status_code == 200
+    assert role_response.json()["role"] == "vip"
+
+
+def test_non_admin_cannot_access_admin_endpoints(client: TestClient, auth_headers: dict[str, str]) -> None:
+    response = client.get("/api/v1/admin/overview", headers=auth_headers)
+    assert response.status_code == 403
