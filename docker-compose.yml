@@ -21,7 +21,7 @@ services:
     container_name: todo_api
     restart: unless-stopped
     environment:
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: "${SECRET_KEY:-change-this-secret-key-with-at-least-32-characters}"
       DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg://todo:todo@postgres:5432/todo}"
       ACCESS_TOKEN_TTL_MINUTES: "${ACCESS_TOKEN_TTL_MINUTES:-15}"
       REFRESH_TOKEN_TTL_DAYS: "${REFRESH_TOKEN_TTL_DAYS:-7}"
