@@ -1,0 +1,19 @@
+﻿.auth-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.auth-grid .full {
+    grid-column: 1 / -1;
+}
+
+.footer-actions {
+    margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+    .auth-grid {
+        grid-template-columns: 1fr;
+    }
+}
