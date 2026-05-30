@@ -162,10 +162,21 @@ docker compose --profile monitoring up -d --build
 
 - `Prometheus` для метрик API, PostgreSQL, контейнеров и сервера
 - `Grafana` с автоматически подключёнными datasource
+- `Grafana` с автоматически загружаемым dashboard `Todo Product Overview`
 - `Loki + Promtail` для сбора Docker-логов
 - `cAdvisor` для контейнерных метрик
 - `node-exporter` для метрик хоста
 - `postgres-exporter` для PostgreSQL
+
+Готовый dashboard уже показывает:
+
+- RPS backend API
+- p95 latency
+- распределение HTTP-статусов
+- состояние PostgreSQL
+- CPU хоста
+- память контейнеров
+- Docker-логи через `Loki`
 
 Важно:
 
