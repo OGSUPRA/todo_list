@@ -28,6 +28,15 @@ services:
       CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:8081","http://localhost:5173"]}'
       MEDIA_ROOT: "${MEDIA_ROOT:-/app/media}"
       SECURE_COOKIES: "${SECURE_COOKIES:-false}"
+      ADMIN_EMAILS: '${ADMIN_EMAILS:-["admin@example.com"]}'
+      AUTH_RATE_LIMIT: "${AUTH_RATE_LIMIT:-20/minute}"
+      WRITE_RATE_LIMIT: "${WRITE_RATE_LIMIT:-80/minute}"
+      READ_RATE_LIMIT: "${READ_RATE_LIMIT:-240/minute}"
+      METRICS_ENABLED: "${METRICS_ENABLED:-true}"
+      GRAFANA_URL: "${GRAFANA_URL:-http://localhost:3000}"
+      PROMETHEUS_URL: "${PROMETHEUS_URL:-http://localhost:9090}"
+      LOKI_URL: "${LOKI_URL:-http://localhost:3100}"
+      PGADMIN_URL: "${PGADMIN_URL:-http://localhost:5050}"
     volumes:
       - backend_media:/app/media
     depends_on:
@@ -60,7 +69,106 @@ services:
       postgres:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v2.53.1
+    container_name: todo_prometheus
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+      - postgres-exporter
+      - cadvisor
+      - node-exporter
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: todo_grafana
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-change-me}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: todo_loki
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    command:
+      - -config.file=/etc/loki/config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: todo_promtail
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    command:
+      - -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: todo_postgres_exporter
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:-todo}@postgres:5432/${POSTGRES_DB:-todo}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: todo_cadvisor
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: todo_node_exporter
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    command:
+      - --path.rootfs=/host
+    volumes:
+      - /:/host:ro,rslave
+
 volumes:
   postgres_data:
   pgadmin_data:
   backend_media:
+  prometheus_data:
+  grafana_data:
+  loki_data:

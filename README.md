@@ -1,28 +1,19 @@
 # Todo Product
 
-Полноценный `API-first` Todo-проект, собранный как современное веб-приложение:
+`Todo Product` это `API-first` приложение для задач на `FastAPI + PostgreSQL + Vue 3`, в котором уже есть роли пользователей, аудит действий, защита от слишком частых запросов, пагинация и сортировка задач, а также отдельный контур мониторинга.
 
-- `FastAPI` вместо Flask
-- `PostgreSQL` вместо SQLite
-- `JWT access + refresh` вместо серверных сессий
-- `Vue 3 + Vite` вместо серверных HTML-шаблонов
-- `pgAdmin` вместо SQLite web admin
+## Что умеет проект
 
-Проект разделён на backend API, frontend SPA и production-ready Docker-инфраструктуру.
-
-## Что умеет
-
-- регистрация и вход пользователя
-- авторизация через JWT
-- refresh-механизм для продления сессии
-- CRUD по задачам
-- переключение статуса `todo/done`
-- массовое завершение задач
-- мягкое удаление и восстановление из архива
-- редактирование профиля
-- смена пароля
-- загрузка аватара
-- SQL-админка для PostgreSQL через `pgAdmin`
+- регистрация, вход, refresh и выход через `JWT access + refresh`
+- роли `admin`, `vip`, `standard`
+- CRUD задач, мягкое удаление и восстановление из архива
+- пагинация, поиск и сортировка задач и архива
+- профиль пользователя, аватар и смена пароля
+- журнал аудита действий и HTTP-запросов
+- административная панель с аналитикой по ролям, задачам и событиям
+- rate limiting для auth, чтения и изменений
+- метрики `Prometheus`, логи в `Loki`, визуализация в `Grafana`
+- `pgAdmin` для работы с PostgreSQL
 
 ## Стек
 
@@ -34,6 +25,7 @@
 - `PostgreSQL`
 - `python-jose`
 - `passlib`
+- `prometheus-fastapi-instrumentator`
 
 ### Frontend
 
@@ -43,11 +35,16 @@
 - `Vue Router`
 - `Axios`
 
-### Infrastructure
+### Monitoring and Infra
 
 - `Docker Compose`
-- `Nginx` внутри frontend-контейнера
-- `pgAdmin 4`
+- `Prometheus`
+- `Grafana`
+- `Loki + Promtail`
+- `cAdvisor`
+- `node-exporter`
+- `postgres-exporter`
+- `pgAdmin`
 
 ## Архитектура
 
@@ -55,9 +52,9 @@
 backend/
   app/
     api/           # роуты и зависимости
-    core/          # конфиг, база, security
+    core/          # конфиг, база, security, rate limiting
     models/        # SQLAlchemy модели
-    repositories/  # слой доступа к данным
+    repositories/  # доступ к данным
     schemas/       # Pydantic схемы
     services/      # бизнес-логика
     utils/         # файловые утилиты
@@ -67,44 +64,221 @@ backend/
 frontend/
   src/
     components/    # UI-компоненты
-    lib/           # API-клиент, токены
-    router/        # маршруты
+    lib/           # API-клиент и токены
+    router/        # SPA маршруты
     stores/        # auth store
-    views/         # страницы SPA
-    tests/         # frontend setup
+    views/         # страницы, включая admin
+
+monitoring/
+  prometheus/      # scrape config
+  loki/            # log storage config
+  promtail/        # log collector config
+  grafana/         # provisioning datasources
+
+scripts/server/
+  bootstrap.sh     # установка Docker и Compose на Ubuntu
+  deploy.sh        # production deploy с профилем monitoring
 ```
 
 ## Быстрый старт
 
-### 1. Подготовка окружения
-
-Создайте `.env` на основе примера:
+### 1. Подготовьте `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Минимум, что нужно изменить:
+Минимально заполните:
 
 - `SECRET_KEY`
 - `POSTGRES_PASSWORD`
 - `PGADMIN_DEFAULT_PASSWORD`
+- `GF_SECURITY_ADMIN_PASSWORD`
+- `ADMIN_EMAILS`
 
-### 2. Запуск через Docker
+Если хотите, чтобы первый пользователь сразу становился администратором, укажите его email в `ADMIN_EMAILS`.
+
+### 2. Запуск приложения
+
+Базовый стек:
 
 ```bash
 docker compose up -d --build
 ```
 
-После запуска:
+Приложение вместе с мониторингом:
+
+```bash
+docker compose --profile monitoring up -d --build
+```
+
+После запуска доступны:
 
 - приложение: `http://localhost:8081`
 - backend docs: `http://localhost:8081/api/docs`
 - pgAdmin: `http://localhost:5050`
+- Grafana: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- Loki: `http://localhost:3100`
+
+## Роли пользователей
+
+- `standard`:
+  базовая работа с собственными задачами и профилем
+- `vip`:
+  тот же пользовательский поток, но роль хранится отдельно и доступна для внутренних тарифов или правил
+- `admin`:
+  доступ к `/admin`, обзору, аудиту и смене ролей пользователей
+
+Админка умеет:
+
+- показывать распределение пользователей по ролям
+- выводить сводку по задачам
+- отображать частые действия и коды ответов
+- показывать горячие маршруты
+- листать аудит по страницам
+- менять роли пользователям без прямой работы с базой
+
+## Аудит и безопасность
+
+Проект сохраняет:
+
+- события авторизации
+- изменения задач
+- обновления профиля и пароля
+- удаления аккаунтов
+- факт rate limit
+- HTTP-контекст запроса: путь, метод, IP, статус, длительность, request id
+
+Ограничения частоты запросов настраиваются через:
+
+- `AUTH_RATE_LIMIT`
+- `WRITE_RATE_LIMIT`
+- `READ_RATE_LIMIT`
+
+## Мониторинг
+
+В проекте уже подготовлены:
+
+- `Prometheus` для метрик API, PostgreSQL, контейнеров и сервера
+- `Grafana` с автоматически подключёнными datasource
+- `Loki + Promtail` для сбора Docker-логов
+- `cAdvisor` для контейнерных метрик
+- `node-exporter` для метрик хоста
+- `postgres-exporter` для PostgreSQL
+
+Важно:
+
+- сервисы мониторинга находятся в профиле `monitoring`
+- `promtail`, `cAdvisor` и `node-exporter` рассчитаны в первую очередь на Ubuntu/Linux сервер
+- если открываете `3000`, `3100`, `9090`, `5050` наружу, ограничьте доступ через firewall или reverse proxy
+
+## Основные API-эндпоинты
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
+- `GET /api/v1/tasks`
+- `POST /api/v1/tasks`
+- `PATCH /api/v1/tasks/{task_id}`
+- `POST /api/v1/tasks/{task_id}/toggle`
+- `DELETE /api/v1/tasks/{task_id}`
+- `POST /api/v1/tasks/{task_id}/restore`
+- `PATCH /api/v1/users/{user_id}/role`
+- `GET /api/v1/admin/overview`
+- `GET /api/v1/admin/users`
+- `GET /api/v1/admin/audit-events`
+
+Для списка задач доступны параметры:
+
+- `page`
+- `page_size`
+- `search`
+- `status`
+- `sort_by`
+- `sort_order`
+- `only_deleted`
+
+## Тесты и проверки
+
+### Backend
+
+```bash
+./.venv_backend/bin/pytest
+```
+
+Покрываются:
+
+- регистрация, логин, refresh, logout
+- rate limiting на авторизацию
+- CRUD задач
+- пагинация и сортировка
+- архив и восстановление
+- admin access и смена ролей
+
+### Frontend
+
+```bash
+cd frontend
+npm ci
+npm run test
+npm run build
+```
+
+Покрываются smoke-сценарии для:
+
+- входа
+- регистрации
+- токен-хелперов
+- списка задач
+
+## CI/CD
+
+### CI
+
+Workflow `.github/workflows/ci.yml` автоматически делает:
+
+1. backend dependency install
+2. backend tests
+3. frontend `npm ci`
+4. frontend tests
+5. frontend production build
+6. `docker compose build api web`
+7. `docker compose --profile monitoring config`
+
+### Deploy
+
+Workflow `.github/workflows/deploy.yml` стартует только после успешного `CI` для ветки `master`.
+
+На сервере выполняется:
+
+1. `git pull origin master`
+2. `bash scripts/server/bootstrap.sh`
+3. `bash scripts/server/deploy.sh`
+
+Что делает bootstrap:
+
+- устанавливает `Docker`, если его ещё нет
+- ставит `docker compose plugin`, если его не хватает
+- запускает Docker service
+
+Что делает deploy:
+
+- создаёт `.env`, если его ещё нет
+- валидирует compose-конфиг с профилем `monitoring`
+- подтягивает готовые monitoring-образы
+- поднимает проект через `docker compose --profile monitoring up -d --build --remove-orphans`
+
+Важно:
+
+- `git` на сервере должен быть установлен заранее
+- SSH workflow рассчитан на Ubuntu-сервер
 
 ## Переменные окружения
 
-Основные переменные из `.env.example`:
+Ключевые переменные:
 
 - `POSTGRES_DB`
 - `POSTGRES_USER`
@@ -113,105 +287,23 @@ docker compose up -d --build
 - `DATABASE_URL`
 - `ACCESS_TOKEN_TTL_MINUTES`
 - `REFRESH_TOKEN_TTL_DAYS`
-- `CORS_ORIGINS`
-- `MEDIA_ROOT`
-- `SECURE_COOKIES`
-- `PGADMIN_DEFAULT_EMAIL`
-- `PGADMIN_DEFAULT_PASSWORD`
+- `ADMIN_EMAILS`
+- `AUTH_RATE_LIMIT`
+- `WRITE_RATE_LIMIT`
+- `READ_RATE_LIMIT`
+- `METRICS_ENABLED`
+- `GRAFANA_URL`
+- `PROMETHEUS_URL`
+- `LOKI_URL`
+- `PGADMIN_URL`
+- `GF_SECURITY_ADMIN_USER`
+- `GF_SECURITY_ADMIN_PASSWORD`
 
-## Backend API
+## Что можно добавить дальше
 
-Основные группы эндпоинтов:
+- отдельные тарифные ограничения для `vip`
+- экспорт аудита в `CSV`
+- уведомления в Telegram или email при подозрительных событиях
+- дашборды Grafana под конкретные SLA и бизнес-метрики
 
-- `/api/v1/auth`
-- `/api/v1/tasks`
-- `/api/v1/users`
-- `/api/v1/health`
-
-Ключевые сценарии:
-
-- `POST /api/v1/auth/register` — регистрация
-- `POST /api/v1/auth/login` — вход
-- `POST /api/v1/auth/refresh` — refresh access token
-- `POST /api/v1/auth/logout` — выход
-- `GET /api/v1/users/me` — получить профиль
-- `PATCH /api/v1/users/me` — обновить профиль
-- `POST /api/v1/users/me/password` — сменить пароль
-- `POST /api/v1/users/me/avatar` — обновить аватар
-- `GET /api/v1/tasks` — список задач
-- `POST /api/v1/tasks` — создать задачу
-- `PATCH /api/v1/tasks/{task_id}` — обновить задачу
-- `POST /api/v1/tasks/{task_id}/toggle` — переключить статус
-- `DELETE /api/v1/tasks/{task_id}` — отправить в архив
-- `POST /api/v1/tasks/{task_id}/restore` — восстановить
-
-## Тесты
-
-### Backend
-
-```bash
-pytest
-```
-
-Покрываются основные сценарии:
-
-- регистрация, логин, refresh, logout
-- CRUD задач
-- архив и восстановление
-- профиль, аватар, пароль, удаление аккаунта
-
-### Frontend
-
-```bash
-cd frontend
-npm ci
-npm run test
-```
-
-Есть smoke-тесты для:
-
-- token helpers
-- формы входа
-- списка задач
-
-## Деплой
-
-В репозитории есть два workflow:
-
-- `.github/workflows/ci.yml` — тесты и сборка
-- `.github/workflows/deploy.yml` — деплой только после успешного CI
-
-Сценарий:
-
-1. push в `master` запускает CI
-2. backend-тесты и frontend-проверки проходят автоматически
-3. CI дополнительно собирает Docker-образы `api` и `web`
-4. только если весь CI завершился успешно, запускается deploy workflow
-5. GitHub Actions подключается по SSH к серверу
-6. выполняет `git pull`
-7. поднимает стек через `docker compose up -d --build --remove-orphans`
-
-Перед первым деплоем нужно:
-
-- подготовить `.env` на сервере
-- убедиться, что Docker и Docker Compose установлены
-
-## Что уже улучшено по сравнению со старой версией
-
-- убран серверный HTML-рендеринг
-- убрана привязка к SQLite
-- добавлено разделение на слои `api / services / repositories / models`
-- введены миграции Alembic
-- авторизация переведена на JWT
-- frontend вынесен в отдельное приложение
-- добавлены тесты
-- docker-инфраструктура упрощена и очищена
-
-## Что можно добавить позже
-
-- rate limiting
-- аудит действий пользователя
-- пагинацию и сортировки задач
-- роли пользователей
-
-Скриншоты и картинки можно добавить позже без изменения архитектуры.
+Скриншоты интерфейса и дополнительные картинки можно добавить позже без изменения архитектуры.

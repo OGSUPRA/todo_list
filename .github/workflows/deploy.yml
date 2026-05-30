@@ -22,5 +22,5 @@ jobs:
           script: |
             cd /root/todo-app
             git pull origin master
-            cp -n .env.example .env || true
-            docker compose up -d --build --remove-orphans
+            bash scripts/server/bootstrap.sh
+            bash scripts/server/deploy.sh

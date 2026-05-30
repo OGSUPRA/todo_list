@@ -69,3 +69,6 @@ jobs:
 
       - name: Build application images
         run: docker compose build api web
+
+      - name: Validate compose stack with monitoring profile
+        run: docker compose --profile monitoring config
