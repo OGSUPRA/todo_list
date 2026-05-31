@@ -4,6 +4,8 @@
 
 По умолчанию production-конфиг сейчас настроен в лёгком режиме для очень слабых VPS: основной deploy поднимает только приложение и базу, а тяжёлые сервисы вынесены в профили и включаются вручную.
 
+Для слабых серверов deploy теперь не собирает `api` и `web` на месте: образы собираются в `CI` и публикуются в `GHCR`, а сервер только скачивает их и запускает.
+
 ## Что умеет проект
 
 - регистрация, вход, refresh и выход через `JWT access + refresh`
@@ -266,8 +268,9 @@ Workflow `.github/workflows/ci.yml` автоматически делает:
 3. frontend `npm ci`
 4. frontend tests
 5. frontend production build
-6. `docker compose build api web`
-7. `docker compose --profile monitoring config`
+6. сборку Docker-образов `api` и `web`
+7. публикацию образов в `GHCR` при push в `master`
+8. `docker compose --profile monitoring --profile admin-tools config`
 
 ### Deploy
 
@@ -291,8 +294,8 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - создаёт `.env`, если его ещё нет
 - валидирует базовый compose-конфиг
 - очищает dangling Docker cache и неиспользуемые слои образов
-- при отсутствии локального `postgres:16-alpine` подтягивает его с ретраями
-- поднимает проект через `docker compose up -d --build --remove-orphans`
+- подтягивает `postgres`, `api` и `web` с ретраями
+- поднимает проект через `docker compose up -d --no-build --remove-orphans`
 - оставляет `pgAdmin` и monitoring выключенными по умолчанию
 
 Важно:
@@ -301,6 +304,7 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - SSH workflow рассчитан на Ubuntu-сервер
 - каталог `/root/todo-app` считается deploy-копией, локальные изменения в отслеживаемых git-файлах будут сбрасываться
 - `.env` сохраняется, потому что не отслеживается `git`
+- для приватного `GHCR` можно добавить секреты `GHCR_USERNAME` и `GHCR_TOKEN`, для публичного репозитория это не обязательно
 - дополнительные сервисы включаются вручную отдельными командами:
   `docker compose --profile admin-tools up -d pgadmin`
   `docker compose --profile monitoring up -d prometheus grafana loki promtail postgres-exporter cadvisor node-exporter`

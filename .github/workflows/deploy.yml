@@ -15,14 +15,21 @@ jobs:
     steps:
       - name: Executing remote ssh commands using ssh key
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: GHCR_USERNAME,GHCR_TOKEN
           script: |
             set -euo pipefail
             cd /root/todo-app
             git fetch origin master
             git reset --hard origin/master
+            if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+            fi
             bash scripts/server/bootstrap.sh
             bash scripts/server/deploy.sh

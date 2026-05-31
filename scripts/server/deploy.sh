@@ -31,13 +31,11 @@ docker compose config >/dev/null
 docker builder prune -f || true
 docker image prune -f || true
 
-# Pull the only required external runtime image for the lightweight profile with retries.
-if ! docker image inspect postgres:16-alpine >/dev/null 2>&1; then
-  retry 4 15 docker pull postgres:16-alpine
-fi
+# Pull required runtime images with retries instead of building on the VPS.
+retry 4 15 docker compose pull postgres api web
 
 # Lightweight default deploy for very small VPS.
 # Extra tools can be enabled later when the server is stronger:
 # docker compose --profile admin-tools up -d pgadmin
 # docker compose --profile monitoring up -d prometheus grafana loki promtail postgres-exporter cadvisor node-exporter
-retry 3 15 docker compose up -d --build --remove-orphans --pull never
+retry 3 15 docker compose up -d --no-build --remove-orphans
