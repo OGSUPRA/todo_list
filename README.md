@@ -265,9 +265,10 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 
 На сервере выполняется:
 
-1. `git pull origin master`
-2. `bash scripts/server/bootstrap.sh`
-3. `bash scripts/server/deploy.sh`
+1. `git fetch origin master`
+2. `git reset --hard origin/master`
+3. `bash scripts/server/bootstrap.sh`
+4. `bash scripts/server/deploy.sh`
 
 Что делает bootstrap:
 
@@ -286,6 +287,8 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 
 - `git` на сервере должен быть установлен заранее
 - SSH workflow рассчитан на Ubuntu-сервер
+- каталог `/root/todo-app` считается deploy-копией, локальные изменения в отслеживаемых git-файлах будут сбрасываться
+- `.env` сохраняется, потому что не отслеживается `git`
 
 ## Переменные окружения
 

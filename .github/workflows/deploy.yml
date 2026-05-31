@@ -20,7 +20,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -euo pipefail
             cd /root/todo-app
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             bash scripts/server/bootstrap.sh
             bash scripts/server/deploy.sh
