@@ -291,6 +291,7 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - создаёт `.env`, если его ещё нет
 - валидирует базовый compose-конфиг
 - очищает dangling Docker cache и неиспользуемые слои образов
+- при отсутствии локального `postgres:16-alpine` подтягивает его с ретраями
 - поднимает проект через `docker compose up -d --build --remove-orphans`
 - оставляет `pgAdmin` и monitoring выключенными по умолчанию
 
