@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     auth_rate_limit: str = "20/minute"
     write_rate_limit: str = "80/minute"
     read_rate_limit: str = "240/minute"
-    metrics_enabled: bool = True
+    metrics_enabled: bool = False
     grafana_url: str = "http://localhost:3000"
     prometheus_url: str = "http://localhost:9090"
     loki_url: str = "http://localhost:3100"

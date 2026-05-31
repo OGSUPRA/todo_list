@@ -2,6 +2,8 @@
 
 `Todo Product` это `API-first` приложение для задач на `FastAPI + PostgreSQL + Vue 3`, в котором уже есть роли пользователей, аудит действий, защита от слишком частых запросов, пагинация и сортировка задач, а также отдельный контур мониторинга.
 
+По умолчанию production-конфиг сейчас настроен в лёгком режиме для очень слабых VPS: основной deploy поднимает только приложение и базу, а тяжёлые сервисы вынесены в профили и включаются вручную.
+
 ## Что умеет проект
 
 - регистрация, вход, refresh и выход через `JWT access + refresh`
@@ -112,6 +114,12 @@ docker compose up -d --build
 docker compose --profile monitoring up -d --build
 ```
 
+`pgAdmin` при необходимости:
+
+```bash
+docker compose --profile admin-tools up -d pgadmin
+```
+
 После запуска доступны:
 
 - приложение: `http://localhost:8081`
@@ -181,8 +189,10 @@ docker compose --profile monitoring up -d --build
 Важно:
 
 - сервисы мониторинга находятся в профиле `monitoring`
+- `pgAdmin` вынесен в профиль `admin-tools`
 - `promtail`, `cAdvisor` и `node-exporter` рассчитаны в первую очередь на Ubuntu/Linux сервер
 - если открываете `3000`, `3100`, `9090`, `5050` наружу, ограничьте доступ через firewall или reverse proxy
+- для очень слабого VPS сначала запускайте только базовый стек без дополнительных профилей
 
 ## Основные API-эндпоинты
 
@@ -279,9 +289,10 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 Что делает deploy:
 
 - создаёт `.env`, если его ещё нет
-- валидирует compose-конфиг с профилем `monitoring`
-- подтягивает готовые monitoring-образы
-- поднимает проект через `docker compose --profile monitoring up -d --build --remove-orphans`
+- валидирует базовый compose-конфиг
+- очищает dangling Docker cache и неиспользуемые слои образов
+- поднимает проект через `docker compose up -d --build --remove-orphans`
+- оставляет `pgAdmin` и monitoring выключенными по умолчанию
 
 Важно:
 
@@ -289,6 +300,9 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - SSH workflow рассчитан на Ubuntu-сервер
 - каталог `/root/todo-app` считается deploy-копией, локальные изменения в отслеживаемых git-файлах будут сбрасываться
 - `.env` сохраняется, потому что не отслеживается `git`
+- дополнительные сервисы включаются вручную отдельными командами:
+  `docker compose --profile admin-tools up -d pgadmin`
+  `docker compose --profile monitoring up -d prometheus grafana loki promtail postgres-exporter cadvisor node-exporter`
 
 ## Переменные окружения
 

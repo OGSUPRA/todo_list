@@ -1,14 +1,33 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: todo_postgres
     restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - shared_buffers=96MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - effective_cache_size=256MB
+      - -c
+      - max_connections=20
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-todo}
       POSTGRES_USER: ${POSTGRES_USER:-todo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todo}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-todo} -d ${POSTGRES_DB:-todo}"]
       interval: 10s
@@ -32,13 +51,15 @@ services:
       AUTH_RATE_LIMIT: "${AUTH_RATE_LIMIT:-20/minute}"
       WRITE_RATE_LIMIT: "${WRITE_RATE_LIMIT:-80/minute}"
       READ_RATE_LIMIT: "${READ_RATE_LIMIT:-240/minute}"
-      METRICS_ENABLED: "${METRICS_ENABLED:-true}"
+      METRICS_ENABLED: "${METRICS_ENABLED:-false}"
       GRAFANA_URL: "${GRAFANA_URL:-http://localhost:3000}"
       PROMETHEUS_URL: "${PROMETHEUS_URL:-http://localhost:9090}"
       LOKI_URL: "${LOKI_URL:-http://localhost:3100}"
       PGADMIN_URL: "${PGADMIN_URL:-http://localhost:5050}"
+      WEB_CONCURRENCY: "${WEB_CONCURRENCY:-1}"
     volumes:
       - backend_media:/app/media
+    logging: *default-logging
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,13 +71,17 @@ services:
     restart: unless-stopped
     ports:
       - "8081:80"
+    logging: *default-logging
     depends_on:
       - api
 
+  # Disabled by default for tiny VPS. Enable only when you need DB administration:
+  # docker compose --profile admin-tools up -d pgadmin
   pgadmin:
     image: dpage/pgadmin4:8.10
     container_name: todo_pgadmin
     restart: unless-stopped
+    profiles: ["admin-tools"]
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me}
@@ -65,10 +90,14 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     ports:
       - "5050:80"
+    logging: *default-logging
     depends_on:
       postgres:
         condition: service_healthy
 
+  # Monitoring is kept behind a profile so a weak VPS can run only the app stack.
+  # Enable later with:
+  # docker compose --profile monitoring up -d prometheus grafana loki promtail postgres-exporter cadvisor node-exporter
   prometheus:
     image: prom/prometheus:v2.53.1
     container_name: todo_prometheus
@@ -83,6 +112,7 @@ services:
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
+    logging: *default-logging
     depends_on:
       - api
       - postgres-exporter
@@ -103,6 +133,7 @@ services:
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
+    logging: *default-logging
     depends_on:
       - prometheus
       - loki
@@ -119,6 +150,7 @@ services:
       - loki_data:/loki
     ports:
       - "3100:3100"
+    logging: *default-logging
 
   promtail:
     image: grafana/promtail:3.1.1
@@ -130,6 +162,7 @@ services:
     volumes:
       - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    logging: *default-logging
     depends_on:
       - loki
 
@@ -140,6 +173,7 @@ services:
     profiles: ["monitoring"]
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:-todo}@postgres:5432/${POSTGRES_DB:-todo}?sslmode=disable"
+    logging: *default-logging
     depends_on:
       postgres:
         condition: service_healthy
@@ -155,6 +189,7 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
+    logging: *default-logging
 
   node-exporter:
     image: prom/node-exporter:v1.8.2
@@ -165,6 +200,7 @@ services:
       - --path.rootfs=/host
     volumes:
       - /:/host:ro,rslave
+    logging: *default-logging
 
 volumes:
   postgres_data:
