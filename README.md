@@ -296,6 +296,7 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - очищает dangling Docker cache и неиспользуемые слои образов
 - подтягивает `postgres`, `api` и `web` с ретраями
 - поднимает проект через `docker compose up -d --no-build --remove-orphans`
+- при неудачном старте печатает `docker compose ps` и хвост логов `todo_postgres`
 - оставляет `pgAdmin` и monitoring выключенными по умолчанию
 
 Важно:
