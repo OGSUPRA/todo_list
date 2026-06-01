@@ -76,10 +76,8 @@ class AuditService:
 
         return AdminOverviewResponse(
             monitoring=MonitoringLinks(
-                grafana=settings.grafana_url,
-                prometheus=settings.prometheus_url,
-                loki=settings.loki_url,
-                pgadmin=settings.pgadmin_url,
+                dozzle=settings.dozzle_url,
+                pgweb=settings.pgweb_url,
             ),
             role_counts=role_counts,
             task_counts=[NamedMetric(label=key, value=value) for key, value in task_totals.items()],

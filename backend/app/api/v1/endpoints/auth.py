@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.api.deps import DBSession, CurrentUser
 from app.core.config import settings
-from app.models import User
+from app.models import User, UserRole
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenPayload
 from app.schemas.common import APIMessage
 from app.schemas.user import UserResponse
@@ -24,7 +24,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
         secure=settings.secure_cookies,
         samesite="lax",
         max_age=int(timedelta(days=settings.refresh_token_ttl_days).total_seconds()),
-        path="/api/v1/auth",
+        path=settings.refresh_cookie_path,
     )
 
 
@@ -46,7 +46,7 @@ def login(request: Request, payload: LoginRequest, response: Response, session: 
 def refresh(request: Request, response: Response, session: DBSession) -> TokenPayload:
     refresh_token = request.cookies.get(settings.refresh_cookie_name)
     if not refresh_token:
-        response.delete_cookie(settings.refresh_cookie_name, path="/api/v1/auth")
+        response.delete_cookie(settings.refresh_cookie_name, path=settings.refresh_cookie_path)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token отсутствует")
 
     user = AuthService(session).validate_refresh_token(refresh_token)
@@ -66,10 +66,23 @@ def logout(request: Request, current_user: CurrentUser, response: Response, sess
         entity_type="user",
         entity_id=str(current_user.id),
     )
-    response.delete_cookie(settings.refresh_cookie_name, path="/api/v1/auth")
+    response.delete_cookie(settings.refresh_cookie_name, path=settings.refresh_cookie_path)
     return APIMessage(detail="Вы вышли из системы")
 
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user: CurrentUser) -> User:
     return current_user
+
+
+@router.get("/admin-access", status_code=status.HTTP_204_NO_CONTENT)
+def admin_access(request: Request, session: DBSession) -> Response:
+    refresh_token = request.cookies.get(settings.refresh_cookie_name)
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Требуется авторизация")
+
+    user = AuthService(session).validate_refresh_token(refresh_token)
+    if user.role != UserRole.ADMIN.value:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Требуются права администратора")
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT, headers={"Cache-Control": "no-store"})

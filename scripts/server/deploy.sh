@@ -37,11 +37,10 @@ docker builder prune -f || true
 docker image prune -f || true
 
 # Pull required runtime images with retries instead of building on the VPS.
-retry 4 15 docker compose pull postgres api web
+retry 4 15 docker compose pull postgres api web dozzle pgweb
 
 # Lightweight default deploy for very small VPS.
-# Extra tools can be enabled later when the server is stronger:
-# docker compose --profile admin-tools up -d pgadmin
+# Heavy metrics tools can be enabled later when the server is stronger:
 # docker compose --profile monitoring up -d prometheus grafana loki promtail postgres-exporter cadvisor node-exporter
 if ! retry 3 15 docker compose up -d --no-build --remove-orphans; then
   print_failure_diagnostics

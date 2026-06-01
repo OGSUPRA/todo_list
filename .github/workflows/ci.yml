@@ -125,4 +125,4 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Validate compose stack with monitoring profile
-        run: docker compose --profile monitoring --profile admin-tools config
+        run: docker compose --profile monitoring config

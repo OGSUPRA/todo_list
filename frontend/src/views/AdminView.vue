@@ -9,8 +9,8 @@
     <section class="surface card fade-up">
       <div class="section-head">
         <div>
-          <div class="eyebrow">Мониторинг</div>
-          <h2>Быстрые переходы</h2>
+          <div class="eyebrow">Операции</div>
+          <h2>Логи и база</h2>
         </div>
       </div>
       <div class="link-grid">
@@ -246,10 +246,8 @@ const auditFilters = reactive({
 const monitoringEntries = computed(() =>
   overview.value
     ? [
-        { label: "Grafana", url: overview.value.monitoring.grafana },
-        { label: "Prometheus", url: overview.value.monitoring.prometheus },
-        { label: "Loki", url: overview.value.monitoring.loki },
-        { label: "pgAdmin", url: overview.value.monitoring.pgadmin },
+        { label: "Dozzle", url: overview.value.monitoring.dozzle },
+        { label: "pgweb", url: overview.value.monitoring.pgweb },
       ]
     : [],
 );

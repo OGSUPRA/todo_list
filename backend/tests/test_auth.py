@@ -28,6 +28,7 @@ def test_register_login_me_refresh_and_logout_flow(client: TestClient) -> None:
     )
     assert login_response.status_code == 200
     assert login_response.cookies.get("todo_refresh_token")
+    assert login_response.cookies.get("todo_refresh_token", path="/")
 
     token = login_response.json()["access_token"]
     me_response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
@@ -48,6 +49,43 @@ def test_register_login_me_refresh_and_logout_flow(client: TestClient) -> None:
 
     stale_me_response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {refreshed_token}"})
     assert stale_me_response.status_code == 401
+
+
+def test_admin_access_requires_admin_refresh_cookie(client: TestClient) -> None:
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "member",
+            "email": "member@example.com",
+            "password": "strong-password",
+        },
+    )
+    member_login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "member", "password": "strong-password"},
+    )
+    client.cookies.set("todo_refresh_token", member_login.cookies.get("todo_refresh_token"))
+
+    forbidden_response = client.get("/api/v1/auth/admin-access")
+    assert forbidden_response.status_code == 403
+
+    client.cookies.clear()
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "chief",
+            "email": "admin@example.com",
+            "password": "strong-password",
+        },
+    )
+    admin_login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "chief", "password": "strong-password"},
+    )
+    client.cookies.set("todo_refresh_token", admin_login.cookies.get("todo_refresh_token"))
+
+    allowed_response = client.get("/api/v1/auth/admin-access")
+    assert allowed_response.status_code == 204
 
 
 def test_login_rejects_invalid_password(client: TestClient) -> None:

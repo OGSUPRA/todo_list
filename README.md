@@ -1,6 +1,6 @@
 # Todo Product
 
-`Todo Product` это `API-first` приложение для задач на `FastAPI + PostgreSQL + Vue 3`, в котором уже есть роли пользователей, аудит действий, защита от слишком частых запросов, пагинация и сортировка задач, а также отдельный контур мониторинга.
+`Todo Product` это `API-first` приложение для задач на `FastAPI + PostgreSQL + Vue 3`, в котором уже есть роли пользователей, аудит действий, защита от слишком частых запросов, пагинация и сортировка задач, а также лёгкий админский контур для логов и базы.
 
 По умолчанию production-конфиг сейчас настроен в лёгком режиме для очень слабых VPS: основной deploy поднимает только приложение и базу, а тяжёлые сервисы вынесены в профили и включаются вручную.
 
@@ -16,8 +16,9 @@
 - журнал аудита действий и HTTP-запросов
 - административная панель с аналитикой по ролям, задачам и событиям
 - rate limiting для auth, чтения и изменений
-- метрики `Prometheus`, логи в `Loki`, визуализация в `Grafana`
-- `pgAdmin` для работы с PostgreSQL
+- `Dozzle` для лёгкого просмотра Docker-логов
+- `pgweb` для лёгкой работы с PostgreSQL
+- admin-only доступ к `/dozzle/` и `/db/` через авторизацию приложения
 
 ## Стек
 
@@ -42,13 +43,14 @@
 ### Monitoring and Infra
 
 - `Docker Compose`
+- `Dozzle`
+- `pgweb`
 - `Prometheus`
 - `Grafana`
 - `Loki + Promtail`
 - `cAdvisor`
 - `node-exporter`
 - `postgres-exporter`
-- `pgAdmin`
 
 ## Архитектура
 
@@ -81,7 +83,7 @@ monitoring/
 
 scripts/server/
   bootstrap.sh     # установка Docker и Compose на Ubuntu
-  deploy.sh        # production deploy с профилем monitoring
+  deploy.sh        # production deploy с лёгкими ops-инструментами
 ```
 
 ## Быстрый старт
@@ -96,8 +98,6 @@ cp .env.example .env
 
 - `SECRET_KEY`
 - `POSTGRES_PASSWORD`
-- `PGADMIN_DEFAULT_PASSWORD`
-- `GF_SECURITY_ADMIN_PASSWORD`
 - `ADMIN_EMAILS`
 
 Если хотите, чтобы первый пользователь сразу становился администратором, укажите его email в `ADMIN_EMAILS`.
@@ -116,17 +116,12 @@ docker compose up -d --build
 docker compose --profile monitoring up -d --build
 ```
 
-`pgAdmin` при необходимости:
-
-```bash
-docker compose --profile admin-tools up -d pgadmin
-```
-
 После запуска доступны:
 
 - приложение: `http://localhost:8081`
 - backend docs: `http://localhost:8081/api/docs`
-- pgAdmin: `http://localhost:5050`
+- Dozzle: `http://localhost:8081/dozzle/`
+- pgweb: `http://localhost:8081/db/`
 - Grafana: `http://localhost:3000`
 - Prometheus: `http://localhost:9090`
 - Loki: `http://localhost:3100`
@@ -168,7 +163,13 @@ docker compose --profile admin-tools up -d pgadmin
 
 ## Мониторинг
 
-В проекте уже подготовлены:
+В лёгком режиме по умолчанию уже работают:
+
+- `Dozzle` для логов контейнеров
+- `pgweb` для PostgreSQL
+- оба маршрута закрыты через админскую авторизацию приложения и не публикуются отдельными портами
+
+Дополнительно в проекте подготовлены:
 
 - `Prometheus` для метрик API, PostgreSQL, контейнеров и сервера
 - `Grafana` с автоматически подключёнными datasource
@@ -191,9 +192,10 @@ docker compose --profile admin-tools up -d pgadmin
 Важно:
 
 - сервисы мониторинга находятся в профиле `monitoring`
-- `pgAdmin` вынесен в профиль `admin-tools`
+- `Dozzle` и `pgweb` стартуют вместе с основным приложением
+- `Dozzle` и `pgweb` доступны только для `admin`, потому что идут через `nginx auth_request` и refresh-cookie приложения
 - `promtail`, `cAdvisor` и `node-exporter` рассчитаны в первую очередь на Ubuntu/Linux сервер
-- если открываете `3000`, `3100`, `9090`, `5050` наружу, ограничьте доступ через firewall или reverse proxy
+- если открываете `3000`, `3100` или `9090` наружу, ограничьте доступ через firewall или reverse proxy
 - для очень слабого VPS сначала запускайте только базовый стек без дополнительных профилей
 
 ## Основные API-эндпоинты
@@ -270,7 +272,7 @@ Workflow `.github/workflows/ci.yml` автоматически делает:
 5. frontend production build
 6. сборку Docker-образов `api` и `web`
 7. публикацию образов в `GHCR` при push в `master`
-8. `docker compose --profile monitoring --profile admin-tools config`
+8. `docker compose --profile monitoring config`
 
 ### Deploy
 
@@ -294,10 +296,10 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - создаёт `.env`, если его ещё нет
 - валидирует базовый compose-конфиг
 - очищает dangling Docker cache и неиспользуемые слои образов
-- подтягивает `postgres`, `api` и `web` с ретраями
+- подтягивает `postgres`, `api`, `web`, `dozzle` и `pgweb` с ретраями
 - поднимает проект через `docker compose up -d --no-build --remove-orphans`
 - при неудачном старте печатает `docker compose ps` и хвост логов `todo_postgres`
-- оставляет `pgAdmin` и monitoring выключенными по умолчанию
+- оставляет тяжёлый monitoring выключенным по умолчанию
 
 Важно:
 
@@ -306,8 +308,7 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - каталог `/root/todo-app` считается deploy-копией, локальные изменения в отслеживаемых git-файлах будут сбрасываться
 - `.env` сохраняется, потому что не отслеживается `git`
 - для приватного `GHCR` можно добавить секреты `GHCR_USERNAME` и `GHCR_TOKEN`, для публичного репозитория это не обязательно
-- дополнительные сервисы включаются вручную отдельными командами:
-  `docker compose --profile admin-tools up -d pgadmin`
+- тяжёлые метрики включаются вручную отдельной командой:
   `docker compose --profile monitoring up -d prometheus grafana loki promtail postgres-exporter cadvisor node-exporter`
 
 ## Переменные окружения
@@ -326,16 +327,14 @@ Workflow `.github/workflows/deploy.yml` стартует только после
 - `WRITE_RATE_LIMIT`
 - `READ_RATE_LIMIT`
 - `METRICS_ENABLED`
-- `GRAFANA_URL`
-- `PROMETHEUS_URL`
-- `LOKI_URL`
-- `PGADMIN_URL`
-- `GF_SECURITY_ADMIN_USER`
-- `GF_SECURITY_ADMIN_PASSWORD`
+- `REFRESH_COOKIE_PATH`
+- `DOZZLE_URL`
+- `PGWEB_URL`
 
 ## Что можно добавить дальше
 
 - отдельные тарифные ограничения для `vip`
 - экспорт аудита в `CSV`
 - уведомления в Telegram или email при подозрительных событиях
+- вынесение тяжёлого monitoring в отдельный хост или managed-сервис
 - дашборды Grafana под конкретные SLA и бизнес-метрики

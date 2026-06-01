@@ -10,10 +10,8 @@ from app.schemas.task import PaginationMeta
 
 
 class MonitoringLinks(BaseModel):
-    grafana: str
-    prometheus: str
-    loki: str
-    pgadmin: str
+    dozzle: str
+    pgweb: str
 
 
 class NamedMetric(BaseModel):

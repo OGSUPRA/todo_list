@@ -67,10 +67,8 @@ export interface NamedMetric {
 }
 
 export interface MonitoringLinks {
-  grafana: string;
-  prometheus: string;
-  loki: string;
-  pgadmin: string;
+  dozzle: string;
+  pgweb: string;
 }
 
 export interface AdminOverviewResponse {
