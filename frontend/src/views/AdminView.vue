@@ -11,12 +11,31 @@
         <div>
           <div class="eyebrow">Операции</div>
           <h2>Логи и база</h2>
+          <p class="section-copy">Открывайте просмотр логов и PostgreSQL прямо из админки, не вспоминая отдельные URL и порты.</p>
         </div>
       </div>
       <div class="link-grid">
-        <a v-for="item in monitoringEntries" :key="item.label" class="monitor-link" :href="item.url" target="_blank" rel="noreferrer">
-          <strong>{{ item.label }}</strong>
-          <span>{{ item.url }}</span>
+        <a
+          v-for="item in monitoringEntries"
+          :key="item.label"
+          class="monitor-link"
+          :class="`monitor-link--${item.tone}`"
+          :href="item.url"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <div class="monitor-topline">
+            <span class="monitor-badge">{{ item.badge }}</span>
+            <span class="monitor-path">{{ item.path }}</span>
+          </div>
+          <div class="monitor-body">
+            <strong>{{ item.label }}</strong>
+            <p>{{ item.description }}</p>
+          </div>
+          <div class="monitor-footer">
+            <span class="monitor-url">{{ item.url }}</span>
+            <span class="monitor-action">{{ item.action }}</span>
+          </div>
         </a>
       </div>
     </section>
@@ -246,8 +265,24 @@ const auditFilters = reactive({
 const monitoringEntries = computed(() =>
   overview.value
     ? [
-        { label: "Dozzle", url: overview.value.monitoring.dozzle },
-        { label: "pgweb", url: overview.value.monitoring.pgweb },
+        {
+          label: "Dozzle",
+          url: overview.value.monitoring.dozzle,
+          badge: "Logs",
+          path: "/dozzle/",
+          description: "Смотрите live-логи контейнеров и быстро проверяйте, что происходит с API, web и PostgreSQL.",
+          action: "Открыть Dozzle",
+          tone: "logs",
+        },
+        {
+          label: "pgweb",
+          url: overview.value.monitoring.pgweb,
+          badge: "SQL",
+          path: "/db/",
+          description: "Переход в лёгкий интерфейс PostgreSQL для таблиц, запросов и быстрой серверной диагностики.",
+          action: "Открыть pgweb",
+          tone: "db",
+        },
       ]
     : [],
 );
@@ -361,6 +396,12 @@ onMounted(async () => {
   margin: 0;
 }
 
+.section-copy {
+  margin: 10px 0 0;
+  max-width: 56ch;
+  color: #667587;
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -390,16 +431,98 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.monitor-link {
-  display: grid;
-  gap: 4px;
-  border-radius: 18px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.64);
-  border: 1px solid rgba(18, 35, 56, 0.08);
+.link-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.monitor-link span,
+.monitor-link {
+  display: grid;
+  gap: 18px;
+  min-height: 208px;
+  border-radius: 24px;
+  padding: 20px;
+  border: 1px solid rgba(18, 35, 56, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.monitor-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 30px rgba(19, 34, 56, 0.12);
+}
+
+.monitor-link--logs {
+  background:
+    radial-gradient(circle at top right, rgba(107, 164, 255, 0.24), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(236, 244, 255, 0.84));
+}
+
+.monitor-link--db {
+  background:
+    radial-gradient(circle at top right, rgba(236, 185, 95, 0.26), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 245, 227, 0.84));
+}
+
+.monitor-topline,
+.monitor-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.monitor-badge,
+.monitor-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.monitor-link--logs .monitor-badge,
+.monitor-link--logs .monitor-action {
+  background: rgba(51, 94, 168, 0.12);
+  color: #234985;
+}
+
+.monitor-link--db .monitor-badge,
+.monitor-link--db .monitor-action {
+  background: rgba(194, 138, 44, 0.12);
+  color: #8b5f12;
+}
+
+.monitor-path {
+  color: #718194;
+  font-family: "SFMono-Regular", "Menlo", monospace;
+  font-size: 0.88rem;
+}
+
+.monitor-body {
+  display: grid;
+  gap: 8px;
+}
+
+.monitor-body strong {
+  font-size: 1.45rem;
+  letter-spacing: -0.04em;
+}
+
+.monitor-body p {
+  margin: 0;
+  color: #57677a;
+  line-height: 1.55;
+}
+
+.monitor-url,
 .muted-line {
   color: #667587;
   font-size: 0.92rem;
@@ -475,6 +598,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 960px) {
+  .link-grid,
   .stats-grid,
   .analytics-grid {
     grid-template-columns: 1fr;
