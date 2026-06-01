@@ -97,9 +97,11 @@ services:
     image: ghcr.io/sosedoff/pgweb:latest
     container_name: todo_pgweb
     restart: unless-stopped
-    environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:-todo}@postgres:5432/${POSTGRES_DB:-todo}?sslmode=disable"
-      PGWEB_URL_PREFIX: /db
+    command:
+      - "--bind=0.0.0.0"
+      - "--listen=8081"
+      - "--url=postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:-todo}@postgres:5432/${POSTGRES_DB:-todo}?sslmode=disable"
+      - "--prefix=/db"
     logging: *default-logging
     depends_on:
       postgres:

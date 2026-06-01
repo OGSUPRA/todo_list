@@ -442,11 +442,30 @@ function formatDate(value: string) {
 }
 
 onMounted(async () => {
-  try {
-    await Promise.all([fetchOverview(), fetchUsers(), fetchAudit()]);
-  } catch {
-    error.value = "Не удалось загрузить административные данные";
+  const sections = await Promise.allSettled([
+    fetchOverview(),
+    fetchUsers(),
+    fetchAudit(),
+  ]);
+
+  const failedSections = sections.flatMap((result, index) => {
+    if (result.status === "fulfilled") {
+      return [];
+    }
+
+    return [index === 0 ? "обзор" : index === 1 ? "пользователи" : "аудит"];
+  });
+
+  if (!failedSections.length) {
+    return;
   }
+
+  if (failedSections.length === sections.length) {
+    error.value = "Не удалось загрузить административные данные";
+    return;
+  }
+
+  error.value = `Часть данных не загрузилась: ${failedSections.join(", ")}`;
 });
 </script>
 
