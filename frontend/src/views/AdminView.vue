@@ -41,22 +41,46 @@
     </section>
 
     <div class="stats-grid">
-      <section class="surface card fade-up">
-        <div class="eyebrow">Роли</div>
-        <h2>Распределение доступа</h2>
-        <div class="metric-list">
-          <div v-for="metric in overview?.role_counts ?? []" :key="metric.label" class="metric-item">
+      <section class="surface card fade-up stat-panel stat-panel--roles">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Роли</div>
+            <h2>Распределение доступа</h2>
+            <p class="panel-copy">{{ rolesInsight }}</p>
+          </div>
+        </div>
+        <div class="spotlight-row">
+          <div class="spotlight-card">
+            <span class="spotlight-label">Ведущая роль</span>
+            <strong>{{ roleLead.label }}</strong>
+            <span class="spotlight-value">{{ roleLead.value }}</span>
+          </div>
+        </div>
+        <div class="chip-grid">
+          <div v-for="metric in overview?.role_counts ?? []" :key="metric.label" class="metric-chip">
             <span>{{ metric.label }}</span>
             <strong>{{ metric.value }}</strong>
           </div>
         </div>
       </section>
 
-      <section class="surface card fade-up">
-        <div class="eyebrow">Задачи</div>
-        <h2>Сводка по продукту</h2>
-        <div class="metric-list">
-          <div v-for="metric in overview?.task_counts ?? []" :key="metric.label" class="metric-item">
+      <section class="surface card fade-up stat-panel stat-panel--tasks">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Задачи</div>
+            <h2>Сводка по продукту</h2>
+            <p class="panel-copy">{{ tasksInsight }}</p>
+          </div>
+        </div>
+        <div class="spotlight-row">
+          <div class="spotlight-card">
+            <span class="spotlight-label">Всего задач</span>
+            <strong>{{ taskLead.label }}</strong>
+            <span class="spotlight-value">{{ taskLead.value }}</span>
+          </div>
+        </div>
+        <div class="chip-grid">
+          <div v-for="metric in overview?.task_counts ?? []" :key="metric.label" class="metric-chip">
             <span>{{ metric.label }}</span>
             <strong>{{ metric.value }}</strong>
           </div>
@@ -65,9 +89,15 @@
     </div>
 
     <div class="analytics-grid">
-      <section class="surface card fade-up">
-        <div class="eyebrow">Трафик</div>
-        <h2>Запросы по дням</h2>
+      <section class="surface card fade-up analytics-panel analytics-panel--traffic">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Трафик</div>
+            <h2>Запросы по дням</h2>
+            <p class="panel-copy">{{ trafficInsight }}</p>
+          </div>
+          <div class="panel-kicker">{{ totalRequests }} запросов</div>
+        </div>
         <div class="bar-list">
           <div v-for="metric in overview?.request_volume ?? []" :key="metric.label" class="bar-item">
             <div class="bar-head">
@@ -81,9 +111,15 @@
         </div>
       </section>
 
-      <section class="surface card fade-up">
-        <div class="eyebrow">Действия</div>
-        <h2>Наиболее частые события</h2>
+      <section class="surface card fade-up analytics-panel analytics-panel--actions">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Действия</div>
+            <h2>Наиболее частые события</h2>
+            <p class="panel-copy">{{ actionsInsight }}</p>
+          </div>
+          <div class="panel-kicker">{{ actionLead.value }} пиков</div>
+        </div>
         <div class="bar-list">
           <div v-for="metric in overview?.action_breakdown ?? []" :key="metric.label" class="bar-item">
             <div class="bar-head">
@@ -97,10 +133,15 @@
         </div>
       </section>
 
-      <section class="surface card fade-up">
-        <div class="eyebrow">Статусы</div>
-        <h2>Распределение ответов</h2>
-        <div class="metric-list">
+      <section class="surface card fade-up analytics-panel analytics-panel--status">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Статусы</div>
+            <h2>Распределение ответов</h2>
+            <p class="panel-copy">{{ statusInsight }}</p>
+          </div>
+        </div>
+        <div class="metric-list elevated-list">
           <div v-for="metric in overview?.status_breakdown ?? []" :key="metric.label" class="metric-item">
             <span>{{ metric.label }}</span>
             <strong>{{ metric.value }}</strong>
@@ -108,10 +149,15 @@
         </div>
       </section>
 
-      <section class="surface card fade-up">
-        <div class="eyebrow">Маршруты</div>
-        <h2>Самые горячие endpoint'ы</h2>
-        <div class="metric-list">
+      <section class="surface card fade-up analytics-panel analytics-panel--paths">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Маршруты</div>
+            <h2>Самые горячие endpoint'ы</h2>
+            <p class="panel-copy">{{ pathsInsight }}</p>
+          </div>
+        </div>
+        <div class="metric-list elevated-list">
           <div v-for="metric in overview?.top_paths ?? []" :key="metric.label" class="metric-item">
             <span>{{ metric.label }}</span>
             <strong>{{ metric.value }}</strong>
@@ -242,6 +288,7 @@ import type {
   AdminUsersResponse,
   AuditEvent,
   AuditEventsResponse,
+  NamedMetric,
   PaginationMeta,
   UserRole,
 } from "@/types";
@@ -289,6 +336,19 @@ const monitoringEntries = computed(() =>
 
 const requestMax = computed(() => Math.max(1, ...(overview.value?.request_volume ?? []).map((item) => item.value)));
 const actionMax = computed(() => Math.max(1, ...(overview.value?.action_breakdown ?? []).map((item) => item.value)));
+const roleLead = computed(() => maxMetric(overview.value?.role_counts ?? []));
+const taskLead = computed(() => findMetric(overview.value?.task_counts ?? [], "total") ?? maxMetric(overview.value?.task_counts ?? []));
+const actionLead = computed(() => maxMetric(overview.value?.action_breakdown ?? []));
+const statusLead = computed(() => maxMetric(overview.value?.status_breakdown ?? []));
+const pathLead = computed(() => maxMetric(overview.value?.top_paths ?? []));
+const requestLead = computed(() => maxMetric(overview.value?.request_volume ?? []));
+const totalRequests = computed(() => sumMetrics(overview.value?.request_volume ?? []));
+const rolesInsight = computed(() => `${formatMetricLabel(roleLead.value.label)} сейчас самая заметная роль по числу пользователей.`);
+const tasksInsight = computed(() => `${taskLead.value.value} задач отражают текущую нагрузку по продукту и архиву.`);
+const trafficInsight = computed(() => `${formatMetricLabel(requestLead.value.label)} был самым активным днём по трафику.`);
+const actionsInsight = computed(() => `Событие ${formatMetricLabel(actionLead.value.label)} встречается чаще остальных в аудите.`);
+const statusInsight = computed(() => `Код ${formatMetricLabel(statusLead.value.label)} лидирует в распределении HTTP-ответов.`);
+const pathsInsight = computed(() => `${formatMetricLabel(pathLead.value.label)} сейчас самый горячий маршрут API.`);
 
 async function fetchOverview() {
   const { data } = await api.get<AdminOverviewResponse>("/admin/overview");
@@ -353,6 +413,25 @@ function toBarWidth(value: number, max: number) {
   return `${Math.max(10, (value / max) * 100)}%`;
 }
 
+function maxMetric(items: NamedMetric[]) {
+  return items.reduce<NamedMetric>(
+    (best, item) => (item.value > best.value ? item : best),
+    items[0] ?? { label: "нет данных", value: 0 },
+  );
+}
+
+function findMetric(items: NamedMetric[], label: string) {
+  return items.find((item) => item.label === label);
+}
+
+function sumMetrics(items: NamedMetric[]) {
+  return items.reduce((sum, item) => sum + item.value, 0);
+}
+
+function formatMetricLabel(value: string) {
+  return value.replace(/_/g, " ");
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString("ru-RU", {
     day: "2-digit",
@@ -400,6 +479,12 @@ onMounted(async () => {
   margin: 10px 0 0;
   max-width: 56ch;
   color: #667587;
+}
+
+.panel-copy {
+  margin: 10px 0 0;
+  max-width: 42ch;
+  color: #617183;
 }
 
 .eyebrow {
@@ -528,6 +613,131 @@ onMounted(async () => {
   font-size: 0.92rem;
 }
 
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(19, 34, 56, 0.08);
+  color: #24364f;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stat-panel,
+.analytics-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-panel::before,
+.analytics-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.stat-panel--roles::before {
+  background: radial-gradient(circle at top right, rgba(88, 154, 255, 0.16), transparent 34%);
+}
+
+.stat-panel--tasks::before {
+  background: radial-gradient(circle at top right, rgba(236, 185, 95, 0.18), transparent 34%);
+}
+
+.analytics-panel--traffic::before {
+  background: radial-gradient(circle at top right, rgba(88, 154, 255, 0.14), transparent 32%);
+}
+
+.analytics-panel--actions::before {
+  background: radial-gradient(circle at top right, rgba(236, 185, 95, 0.18), transparent 32%);
+}
+
+.analytics-panel--status::before {
+  background: radial-gradient(circle at top right, rgba(84, 184, 130, 0.16), transparent 32%);
+}
+
+.analytics-panel--paths::before {
+  background: radial-gradient(circle at top right, rgba(202, 126, 88, 0.16), transparent 32%);
+}
+
+.spotlight-row,
+.chip-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.spotlight-row {
+  margin-bottom: 18px;
+}
+
+.spotlight-card {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(18, 35, 56, 0.08);
+}
+
+.spotlight-label {
+  color: #718194;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spotlight-card strong {
+  font-size: 1.7rem;
+  letter-spacing: -0.05em;
+}
+
+.spotlight-value {
+  font-size: 2.35rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #132238;
+}
+
+.chip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric-chip {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  min-height: 60px;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(18, 35, 56, 0.08);
+}
+
+.metric-chip span {
+  color: #596a7e;
+}
+
+.metric-chip strong {
+  font-size: 1.1rem;
+}
+
 .metric-item,
 .bar-head {
   display: flex;
@@ -543,6 +753,10 @@ onMounted(async () => {
 
 .metric-item:last-child {
   border-bottom: 0;
+}
+
+.elevated-list .metric-item {
+  padding: 14px 0;
 }
 
 .bar-item {
@@ -599,6 +813,7 @@ onMounted(async () => {
 
 @media (max-width: 960px) {
   .link-grid,
+  .chip-grid,
   .stats-grid,
   .analytics-grid {
     grid-template-columns: 1fr;
@@ -611,6 +826,10 @@ onMounted(async () => {
 
   .filters {
     width: 100%;
+  }
+
+  .panel-head {
+    flex-direction: column;
   }
 }
 </style>
