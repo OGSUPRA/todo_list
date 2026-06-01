@@ -309,30 +309,26 @@ const auditFilters = reactive({
   action: "",
 });
 
-const monitoringEntries = computed(() =>
-  overview.value
-    ? [
-        {
-          label: "Dozzle",
-          url: overview.value.monitoring.dozzle,
-          badge: "Logs",
-          path: "/dozzle/",
-          description: "Смотрите live-логи контейнеров и быстро проверяйте, что происходит с API, web и PostgreSQL.",
-          action: "Открыть Dozzle",
-          tone: "logs",
-        },
-        {
-          label: "pgweb",
-          url: overview.value.monitoring.pgweb,
-          badge: "SQL",
-          path: "/db/",
-          description: "Переход в лёгкий интерфейс PostgreSQL для таблиц, запросов и быстрой серверной диагностики.",
-          action: "Открыть pgweb",
-          tone: "db",
-        },
-      ]
-    : [],
-);
+const monitoringEntries = computed(() => [
+  {
+    label: "Dozzle",
+    url: overview.value?.monitoring.dozzle ?? "/dozzle/",
+    badge: "Logs",
+    path: "/dozzle/",
+    description: "Смотрите live-логи контейнеров и быстро проверяйте, что происходит с API, web и PostgreSQL.",
+    action: "Открыть Dozzle",
+    tone: "logs",
+  },
+  {
+    label: "pgweb",
+    url: overview.value?.monitoring.pgweb ?? "/db/",
+    badge: "SQL",
+    path: "/db/",
+    description: "Переход в лёгкий интерфейс PostgreSQL для таблиц, запросов и быстрой серверной диагностики.",
+    action: "Открыть pgweb",
+    tone: "db",
+  },
+]);
 
 const requestMax = computed(() => Math.max(1, ...(overview.value?.request_volume ?? []).map((item) => item.value)));
 const actionMax = computed(() => Math.max(1, ...(overview.value?.action_breakdown ?? []).map((item) => item.value)));
