@@ -1,7 +1,7 @@
 <template>
   <AppShell
     title="Админ-панель и аудит"
-    subtitle="Следите за ролями, запросами и поведением системы из одного экрана, не заходя в контейнеры вручную."
+    subtitle="Роли, запросы и поведение системы из одного экрана."
   >
     <div v-if="notice" class="notice success fade-up">{{ notice }}</div>
     <div v-if="error" class="notice error fade-up">{{ error }}</div>
@@ -11,7 +11,7 @@
         <div>
           <div class="eyebrow">Операции</div>
           <h2>Логи и база</h2>
-          <p class="section-copy">Открывайте просмотр логов и PostgreSQL прямо из админки, не вспоминая отдельные URL и порты.</p>
+          <p class="section-copy">Просмотр логов и PostgreSQL прямо из админки.</p>
         </div>
       </div>
       <div class="link-grid">

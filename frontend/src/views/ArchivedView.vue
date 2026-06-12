@@ -1,7 +1,7 @@
 <template>
   <AppShell
     title="Архив без потерь"
-    subtitle="Удаление стало мягким: архив тоже сортируется, фильтруется и возвращает задачи в рабочий поток без ручного поиска."
+    subtitle="Сортируйте архив, фильтруйте и возвращайте задачи в список без ручного поиска."
   >
     <div v-if="notice" class="notice info fade-up">{{ notice }}</div>
 
@@ -10,7 +10,7 @@
       :meta="meta"
       :summary="summary"
       title="Архивированные задачи"
-      heading-eyebrow="Мягкое удаление"
+      heading-eyebrow="Удаление"
       :search="filters.search"
       :status-filter="filters.status"
       :sort-by="filters.sort_by"
